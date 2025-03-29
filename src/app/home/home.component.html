@@ -1,0 +1,15 @@
+<mat-card appearance="outlined">
+  <mat-card-content>
+    <div id="container">
+      <div id="title">
+        <h2>Cadmus Codicology</h2>
+      </div>
+      <div id="image">
+        <img src="img/ms-600.png" width="400px" alt="Codicology" />
+      </div>
+    </div>
+    @if (!logged) {
+    <div id="login">Please <a routerLink="/login">login</a> to start.</div>
+    }
+  </mat-card-content>
+</mat-card>

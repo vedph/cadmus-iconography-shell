@@ -1,0 +1,21 @@
+div#container {
+  display: grid;
+  justify-items: center ;
+  grid-template-rows: auto auto auto;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "title"
+    "image"
+    "login";
+  gap: 16px;
+}
+div#title {
+  grid-area: title;
+}
+div#image {
+  grid-area: image;
+}
+div#login {
+  grid-area: login;
+  text-align: center;
+}

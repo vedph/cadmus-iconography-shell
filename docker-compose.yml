@@ -1,0 +1,67 @@
+services:
+  # MongoDB
+  cadmus-iconography-mongo:
+    image: mongo
+    container_name: cadmus-iconography-mongo
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
+    command: mongod --logpath=/dev/null # --quiet
+    ports:
+      - 27017:27017
+    networks:
+      - cadmus-iconography-network
+
+  # PostgreSQL
+  cadmus-iconography-pgsql:
+    image: postgres
+    container_name: cadmus-iconography-pgsql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - 5432:5432
+    networks:
+      - cadmus-iconography-network
+      # volumes:
+      # ensure you have created the var/db/pgsql folder in the host
+      # https://hub.docker.com/r/postgis/postgis
+      # - /var/db/pgsql:/var/lib/postgresql/data
+
+  cadmus-iconography-api:
+    image: vedph2020/cadmus-iconography-api:0.0.1
+    container_name: cadmus-iconography-api
+    ports:
+      # https://stackoverflow.com/questions/48669548/why-does-aspnet-core-start-on-port-80-from-within-docker
+      - 5152:8080
+    depends_on:
+      - cadmus-iconography-mongo
+      - cadmus-iconography-pgsql
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - CONNECTIONSTRINGS__DEFAULT=mongodb://cadmus-iconography-mongo:27017/{0}
+      - CONNECTIONSTRINGS__AUTH=Server=cadmus-iconography-pgsql;port=5432;Database={0};User Id=postgres;Password=postgres;Include Error Detail=True
+      - CONNECTIONSTRINGS__INDEX=Server=cadmus-iconography-pgsql;port=5432;Database={0};User Id=postgres;Password=postgres;Include Error Detail=True
+      - SEED__DELAY=20
+      - MESSAGING__APIROOTURL=http://cadmusapi.azurewebsites.net
+      - MESSAGING__APPROOTURL=http://cadmusapi.com/
+      - MESSAGING__SUPPORTEMAIL=support@cadmus.com
+      - SERILOG__CONNECTIONSTRING=mongodb://cadmus-iconography-mongo:27017/cadmus-logs
+      - STOCKUSERS__0__PASSWORD=P4ss-W0rd!
+    networks:
+      - cadmus-iconography-network
+
+  cadmus-iconography-app:
+    image: vedph2020/cadmus-iconography-shell:0.0.1
+    container_name: cadmus-iconography-app
+    ports:
+      - 4200:80
+    depends_on:
+      - cadmus-iconography-api
+    networks:
+      - cadmus-iconography-network
+
+networks:
+  cadmus-iconography-network:
+    driver: bridge
