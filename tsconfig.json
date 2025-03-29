@@ -3,6 +3,11 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "paths": {
+      "@myrmidon/cadmus-part-iconography-instructions": [
+        "./dist/myrmidon/cadmus-part-iconography-instructions"
+      ]
+    },
     "outDir": "./dist/out-tsc",
     "strict": true,
     "noImplicitOverride": true,

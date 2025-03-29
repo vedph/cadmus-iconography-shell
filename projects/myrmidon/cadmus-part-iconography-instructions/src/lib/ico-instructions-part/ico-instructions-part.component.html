@@ -1,0 +1,112 @@
+<form [formGroup]="form" (submit)="save()">
+  <mat-card>
+    <mat-card-header>
+      <div mat-card-avatar>
+        <mat-icon>picture_in_picture</mat-icon>
+      </div>
+      <mat-card-title>{{
+        (modelName() | titlecase) || "Iconographic Instructions Part"
+      }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div>
+        <button
+          type="button"
+          mat-flat-button
+          color="primary"
+          (click)="addInstruction()"
+        >
+          <mat-icon>add_circle</mat-icon> Instruction
+        </button>
+      </div>
+      @if (instructions.value.length) {
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>type(s)</th>
+            <th>range</th>
+            <th>position</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (instruction of instructions.value; track instruction; let i =
+          $index; let first = $first; let last = $last) {
+          <tr [class.selected]="instruction === edited">
+            <td class="fit-width">
+              <button
+                type="button"
+                mat-icon-button
+                color="primary"
+                matTooltip="Edit this instruction"
+                (click)="editInstruction(instruction, i)"
+              >
+                <mat-icon class="mat-primary">edit</mat-icon>
+              </button>
+              <button
+                type="button"
+                mat-icon-button
+                matTooltip="Move this instruction up"
+                [disabled]="first"
+                (click)="moveInstructionUp(i)"
+              >
+                <mat-icon>arrow_upward</mat-icon>
+              </button>
+              <button
+                type="button"
+                mat-icon-button
+                matTooltip="Move this instruction down"
+                [disabled]="last"
+                (click)="moveInstructionDown(i)"
+              >
+                <mat-icon>arrow_downward</mat-icon>
+              </button>
+              <button
+                type="button"
+                mat-icon-button
+                color="warn"
+                matTooltip="Delete this instruction"
+                (click)="deleteInstruction(i)"
+              >
+                <mat-icon class="mat-warn">remove_circle</mat-icon>
+              </button>
+            </td>
+            <td>
+              @for (type of instruction.types; track type) {
+              <span class="type">{{
+                type | flatLookup : instrTypeEntries : "id"
+              }}</span>
+              }
+            </td>
+            <td>{{ instruction.location }}</td>
+            <td>
+              {{
+                instruction.position | flatLookup : instrPositionEntries : "id"
+              }}
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+      } @if (edited) {
+      <fieldset>
+        <mat-expansion-panel [expanded]="edited" [disabled]="!edited">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Instruction #</mat-panel-title>
+          </mat-expansion-panel-header>
+          TODO: editor control with: [model]="edited"
+          (modelChange)="saveInstruction($event)"
+          (editorClose)="closeInstruction()"
+        </mat-expansion-panel>
+      </fieldset>
+      }
+    </mat-card-content>
+    <mat-card-actions>
+      <cadmus-close-save-buttons
+        [form]="form"
+        [noSave]="userLevel < 2"
+        (closeRequest)="close()"
+      />
+    </mat-card-actions>
+  </mat-card>
+</form>
