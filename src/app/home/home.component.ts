@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
@@ -8,7 +8,7 @@ import { AuthJwtService } from '@myrmidon/auth-jwt-login';
 
 @Component({
   selector: 'cadmus-home',
-  imports: [CommonModule, RouterModule, MatCardModule],
+  imports: [RouterModule, MatCardModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
 })
