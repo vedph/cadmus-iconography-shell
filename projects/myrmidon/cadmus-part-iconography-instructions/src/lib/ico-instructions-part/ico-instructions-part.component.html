@@ -32,7 +32,7 @@
         <tbody>
           @for (instruction of instructions.value; track instruction; let i =
           $index; let first = $first; let last = $last) {
-          <tr [class.selected]="instruction === edited">
+          <tr [class.selected]="i === editedIndex()">
             <td class="fit-width">
               <button
                 type="button"
@@ -74,25 +74,25 @@
             <td>
               @for (type of instruction.types; track type) {
               <span class="type">{{
-                type | flatLookup : instrTypeEntries : "id"
+                type | flatLookup : instrTypeEntries() : "id"
               }}</span>
               }
             </td>
             <td>{{ instruction.location }}</td>
             <td>
               {{
-                instruction.position | flatLookup : instrPositionEntries : "id"
+                instruction.position | flatLookup : instrPositionEntries() : "id"
               }}
             </td>
           </tr>
           }
         </tbody>
       </table>
-      } @if (edited) {
+      } @if (edited()) {
       <fieldset>
-        <mat-expansion-panel [expanded]="edited" [disabled]="!edited">
+        <mat-expansion-panel [expanded]="edited()" [disabled]="!edited()">
           <mat-expansion-panel-header>
-            <mat-panel-title>Instruction #</mat-panel-title>
+            <mat-panel-title>instruction #{{ editedIndex() + 1 }}</mat-panel-title>
           </mat-expansion-panel-header>
           TODO: editor control with: [model]="edited"
           (modelChange)="saveInstruction($event)"

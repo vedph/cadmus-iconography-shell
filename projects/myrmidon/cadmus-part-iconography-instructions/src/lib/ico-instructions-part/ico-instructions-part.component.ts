@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -19,13 +19,20 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { AuthJwtService } from '@myrmidon/auth-jwt-login';
 
-import { FlatLookupPipe, NgxToolsValidators } from '@myrmidon/ngx-tools';
+import {
+  deepCopy,
+  FlatLookupPipe,
+  NgxToolsValidators,
+} from '@myrmidon/ngx-tools';
 import {
   CloseSaveButtonsComponent,
-  EditedObject,
   ModelEditorComponentBase,
 } from '@myrmidon/cadmus-ui';
-import { ThesauriSet, ThesaurusEntry } from '@myrmidon/cadmus-core';
+import {
+  EditedObject,
+  ThesauriSet,
+  ThesaurusEntry,
+} from '@myrmidon/cadmus-core';
 import { DialogService } from '@myrmidon/ngx-mat-tools';
 
 import {
@@ -66,29 +73,49 @@ export class IcoInstructionsPartComponent
   extends ModelEditorComponentBase<IcoInstructionsPart>
   implements OnInit
 {
-  public editedIndex: number;
-  public edited?: IcoInstruction;
+  public readonly editedIndex = signal<number>(-1);
+  public readonly edited = signal<IcoInstruction | undefined>(undefined);
 
   // ico-instruction-types
-  public instrTypeEntries?: ThesaurusEntry[];
+  public readonly instrTypeEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
   // ico-instruction-scripts
-  public instrScriptEntries?: ThesaurusEntry[];
+  public readonly instrScriptEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
   // ico-instruction-positions
-  public instrPositionEntries?: ThesaurusEntry[];
+  public readonly instrPositionEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
   // ico-instruction-feats
-  public instrFeatEntries?: ThesaurusEntry[];
+  public readonly instrFeatEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
   // ico-instruction-languages
-  public instrLangEntries?: ThesaurusEntry[];
+  public readonly instrLangEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
   // ico-instruction-tools
-  public instrToolEntries?: ThesaurusEntry[];
+  public readonly instrToolEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
   // ico-instruction-colors
-  public instrColorEntries?: ThesaurusEntry[];
+  public readonly instrColorEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
   // assertion-tags
-  public assTagEntries?: ThesaurusEntry[];
+  public readonly assTagEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
   // doc-reference-types
-  public docRefTypeEntries?: ThesaurusEntry[];
+  public readonly docRefTypeEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
   // doc-reference-tags
-  public docRefTagEntries?: ThesaurusEntry[];
+  public readonly docRefTagEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
 
   public instructions: FormControl<IcoInstruction[]>;
 
@@ -98,7 +125,6 @@ export class IcoInstructionsPartComponent
     private _dialogService: DialogService
   ) {
     super(authService, formBuilder);
-    this.editedIndex = -1;
     // form
     this.instructions = formBuilder.control([], {
       // at least 1 entry
@@ -120,63 +146,63 @@ export class IcoInstructionsPartComponent
   private updateThesauri(thesauri: ThesauriSet): void {
     let key = 'ico-instruction-types';
     if (this.hasThesaurus(key)) {
-      this.instrTypeEntries = thesauri[key].entries;
+      this.instrTypeEntries.set(thesauri[key].entries);
     } else {
-      this.instrTypeEntries = undefined;
+      this.instrTypeEntries.set(undefined);
     }
     key = 'ico-instruction-scripts';
     if (this.hasThesaurus(key)) {
-      this.instrScriptEntries = thesauri[key].entries;
+      this.instrScriptEntries.set(thesauri[key].entries);
     } else {
-      this.instrScriptEntries = undefined;
+      this.instrScriptEntries.set(undefined);
     }
     key = 'ico-instruction-positions';
     if (this.hasThesaurus(key)) {
-      this.instrPositionEntries = thesauri[key].entries;
+      this.instrPositionEntries.set(thesauri[key].entries);
     } else {
-      this.instrPositionEntries = undefined;
+      this.instrPositionEntries.set(undefined);
     }
     key = 'ico-instruction-feats';
     if (this.hasThesaurus(key)) {
-      this.instrFeatEntries = thesauri[key].entries;
+      this.instrFeatEntries.set(thesauri[key].entries);
     } else {
-      this.instrFeatEntries = undefined;
+      this.instrFeatEntries.set(undefined);
     }
     key = 'ico-instruction-languages';
     if (this.hasThesaurus(key)) {
-      this.instrLangEntries = thesauri[key].entries;
+      this.instrLangEntries.set(thesauri[key].entries);
     } else {
-      this.instrLangEntries = undefined;
+      this.instrLangEntries.set(undefined);
     }
     key = 'ico-instruction-tools';
     if (this.hasThesaurus(key)) {
-      this.instrToolEntries = thesauri[key].entries;
+      this.instrToolEntries.set(thesauri[key].entries);
     } else {
-      this.instrToolEntries = undefined;
+      this.instrToolEntries.set(undefined);
     }
     key = 'ico-instruction-colors';
     if (this.hasThesaurus(key)) {
-      this.instrColorEntries = thesauri[key].entries;
+      this.instrColorEntries.set(thesauri[key].entries);
     } else {
-      this.instrColorEntries = undefined;
+      this.instrColorEntries.set(undefined);
     }
     key = 'assertion-tags';
     if (this.hasThesaurus(key)) {
-      this.assTagEntries = thesauri[key].entries;
+      this.assTagEntries.set(thesauri[key].entries);
     } else {
-      this.assTagEntries = undefined;
+      this.assTagEntries.set(undefined);
     }
     key = 'doc-reference-types';
     if (this.hasThesaurus(key)) {
-      this.docRefTypeEntries = thesauri[key].entries;
+      this.docRefTypeEntries.set(thesauri[key].entries);
     } else {
-      this.docRefTypeEntries = undefined;
+      this.docRefTypeEntries.set(undefined);
     }
     key = 'doc-reference-tags';
     if (this.hasThesaurus(key)) {
-      this.docRefTagEntries = thesauri[key].entries;
+      this.docRefTagEntries.set(thesauri[key].entries);
     } else {
-      this.docRefTagEntries = undefined;
+      this.docRefTagEntries.set(undefined);
     }
   }
 
@@ -218,21 +244,21 @@ export class IcoInstructionsPartComponent
   }
 
   public editInstruction(instruction: IcoInstruction, index: number): void {
-    this.editedIndex = index;
-    this.edited = instruction;
+    this.editedIndex.set(index);
+    this.edited.set(deepCopy(instruction));
   }
 
   public closeInstruction(): void {
-    this.editedIndex = -1;
-    this.edited = undefined;
+    this.editedIndex.set(-1);
+    this.edited.set(undefined);
   }
 
   public saveInstruction(instruction: IcoInstruction): void {
     const instructions = [...this.instructions.value];
-    if (this.editedIndex === -1) {
+    if (this.editedIndex() === -1) {
       instructions.push(instruction);
     } else {
-      instructions.splice(this.editedIndex, 1, instruction);
+      instructions.splice(this.editedIndex(), 1, instruction);
     }
     this.instructions.setValue(instructions);
     this.instructions.markAsDirty();
@@ -245,7 +271,7 @@ export class IcoInstructionsPartComponent
       .confirm('Confirmation', 'Delete instruction?')
       .subscribe((yes: boolean | undefined) => {
         if (yes) {
-          if (this.editedIndex === index) {
+          if (this.editedIndex() === index) {
             this.closeInstruction();
           }
           const instructions = [...this.instructions.value];
