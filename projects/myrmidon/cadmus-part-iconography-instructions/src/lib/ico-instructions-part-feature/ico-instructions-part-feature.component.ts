@@ -14,7 +14,7 @@ import { IcoInstructionsPartComponent } from '../ico-instructions-part/ico-instr
   templateUrl: './ico-instructions-part-feature.component.html',
   styleUrl: './ico-instructions-part-feature.component.css',
 })
-export class CodIllumInstructionsPartFeatureComponent
+export class IcoInstructionsPartFeatureComponent
   extends EditPartFeatureBase
   implements OnInit
 {
@@ -39,6 +39,7 @@ export class CodIllumInstructionsPartFeatureComponent
   protected override getReqThesauriIds(): string[] {
     return [
       'ico-instruction-types',
+      'ico-instruction-type-tags',
       'ico-instruction-scripts',
       'ico-instruction-positions',
       'ico-instruction-feats',

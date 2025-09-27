@@ -6,6 +6,9 @@
     "paths": {
       "@myrmidon/cadmus-part-iconography-instructions": [
         "./dist/myrmidon/cadmus-part-iconography-instructions"
+      ],
+      "@myrmidon/cadmus-part-iconography-pg": [
+        "./dist/myrmidon/cadmus-part-iconography-pg"
       ]
     },
     "outDir": "./dist/out-tsc",
@@ -28,5 +31,13 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true
-  }
+  },
+  "references": [
+    {
+      "path": "./projects/myrmidon/cadmus-part-iconography-pg/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/myrmidon/cadmus-part-iconography-pg/tsconfig.spec.json"
+    }
+  ]
 }

@@ -9,14 +9,13 @@ import {
   withJsonpSupport,
 } from '@angular/common/http';
 import { provideRouter, withViewTransitions } from '@angular/router';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 import { provideNativeDateAdapter } from '@angular/material/core';
 
 import { NgeMonacoModule } from '@cisstech/nge/monaco';
 import { NgeMarkdownModule } from '@cisstech/nge/markdown';
 
-import { authJwtInterceptor } from '@myrmidon/auth-jwt-login';
+import { jwtInterceptor } from '@myrmidon/auth-jwt-login';
 import {
   CADMUS_TEXT_ED_BINDINGS_TOKEN,
   CADMUS_TEXT_ED_SERVICE_OPTIONS_TOKEN,
@@ -39,11 +38,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withViewTransitions()),
-    provideAnimationsAsync(),
-    provideHttpClient(
-      withJsonpSupport(),
-      withInterceptors([authJwtInterceptor])
-    ),
+    provideHttpClient(withInterceptors([jwtInterceptor])),
     provideNativeDateAdapter(),
     importProvidersFrom(NgeMonacoModule.forRoot({})),
     importProvidersFrom(NgeMarkdownModule),

@@ -1,71 +1,88 @@
-
-import { Component, OnInit, Inject } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Component, OnInit, Inject, OnDestroy } from '@angular/core';
+import { Thesaurus, ThesaurusEntry } from '@myrmidon/cadmus-core';
+import { Router, RouterModule, RouterOutlet } from '@angular/router';
 import { take } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
+// material
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { EnvService } from '@myrmidon/ngx-tools';
+// myrmidon
+import { EnvService, RamStorageService } from '@myrmidon/ngx-tools';
 import { AuthJwtService, GravatarPipe, User } from '@myrmidon/auth-jwt-login';
 
-import { Thesaurus, ThesaurusEntry } from '@myrmidon/cadmus-core';
+// cadmus
 import { AppRepository } from '@myrmidon/cadmus-state';
 
 @Component({
   selector: 'app-root',
   imports: [
-    ReactiveFormsModule,
     RouterModule,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
     MatToolbarModule,
     MatTooltipModule,
-    GravatarPipe
-],
+    GravatarPipe,
+    RouterOutlet
+  ],
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'],
+  styleUrl: './app.component.scss',
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
+  private readonly _subs: Subscription[] = [];
+
   public user?: User;
   public logged?: boolean;
   public itemBrowsers?: ThesaurusEntry[];
-  public version?: string;
+  public version: string;
 
   constructor(
     @Inject('itemBrowserKeys')
     private _itemBrowserKeys: { [key: string]: string },
     private _authService: AuthJwtService,
-    private _repository: AppRepository,
+    private _appRepository: AppRepository,
     private _router: Router,
-    env: EnvService
+    env: EnvService,
+    storage: RamStorageService
   ) {
-    this.version = env.get('version');
+    this.version = env.get('version') || '';
   }
 
-  ngOnInit(): void {
+  public ngOnInit(): void {
     this.user = this._authService.currentUserValue || undefined;
     this.logged = this.user !== null;
 
-    this._authService.currentUser$.subscribe((user: User | null) => {
-      this.logged = this._authService.isAuthenticated(true);
-      this.user = user || undefined;
-      // load the general app state just once
-      if (user) {
-        this._repository.load();
-      }
-    });
-
-    this._repository.itemBrowserThesaurus$.subscribe(
-      (thesaurus: Thesaurus | undefined) => {
-        this.itemBrowsers = thesaurus ? thesaurus.entries : undefined;
-      }
+    // when the user logs in or out, reload the app data
+    this._subs.push(
+      this._authService.currentUser$.subscribe((user: User | null) => {
+        this.logged = this._authService.isAuthenticated(true);
+        this.user = user || undefined;
+        if (user) {
+          console.log('User logged in: ', user);
+          this._appRepository.load();
+        } else {
+          console.log('User logged out');
+        }
+      })
     );
+
+    // when the thesaurus is loaded, get the item browsers
+    this._subs.push(
+      this._appRepository.itemBrowserThesaurus$.subscribe(
+        (thesaurus: Thesaurus | undefined) => {
+          this.itemBrowsers = thesaurus ? thesaurus.entries : undefined;
+        }
+      )
+    );
+  }
+
+  public ngOnDestroy(): void {
+    this._subs.forEach((s) => s.unsubscribe());
   }
 
   public getItemBrowserRoute(id: string): string {

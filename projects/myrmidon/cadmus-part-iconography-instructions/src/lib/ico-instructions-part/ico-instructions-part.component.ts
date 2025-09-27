@@ -19,11 +19,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { AuthJwtService } from '@myrmidon/auth-jwt-login';
 
-import {
-  deepCopy,
-  FlatLookupPipe,
-  NgxToolsValidators,
-} from '@myrmidon/ngx-tools';
+import { FlatLookupPipe, NgxToolsValidators } from '@myrmidon/ngx-tools';
 import {
   CloseSaveButtonsComponent,
   ModelEditorComponentBase,
@@ -245,7 +241,7 @@ export class IcoInstructionsPartComponent
 
   public editInstruction(instruction: IcoInstruction, index: number): void {
     this.editedIndex.set(index);
-    this.edited.set(deepCopy(instruction));
+    this.edited.set(structuredClone(instruction));
   }
 
   public closeInstruction(): void {

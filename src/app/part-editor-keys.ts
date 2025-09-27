@@ -1,7 +1,8 @@
 import { PartEditorKeys } from '@myrmidon/cadmus-core';
+import { METADATA_PART_TYPEID } from '@myrmidon/cadmus-part-general-ui';
+import { ICO_INSTRUCTIONS_PART_TYPEID } from '@myrmidon/cadmus-part-iconography-instructions';
 
-// import { COD_ILLUM_INSTRUCTIONS_PART_TYPEID } from '../../projects/myrmidon/cadmus-part-codicology-instructions/src/public-api';
-
+const GENERAL = 'general';
 const ICONOGRAPHY = 'iconography';
 
 /**
@@ -11,7 +12,10 @@ const ICONOGRAPHY = 'iconography';
  * with the mappings between fragment type IDs and their editor keys.
  */
 export const PART_EDITOR_KEYS: PartEditorKeys = {
-  // [COD_ILLUM_INSTRUCTIONS_PART_TYPEID]: {
-  //   part: CODICOLOGY,
-  // },
+  [METADATA_PART_TYPEID]: {
+    part: GENERAL,
+  },
+  [ICO_INSTRUCTIONS_PART_TYPEID]: {
+    part: ICONOGRAPHY,
+  },
 };

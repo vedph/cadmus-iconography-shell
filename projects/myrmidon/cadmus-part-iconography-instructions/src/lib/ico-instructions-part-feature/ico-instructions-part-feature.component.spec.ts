@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { CodIllumInstructionsPartFeatureComponent } from './ico-instructions-part-feature.component';
+import { IcoInstructionsPartFeatureComponent } from './ico-instructions-part-feature.component';
 
 describe('CodIllumInstructionsPartFeatureComponent', () => {
-  let component: CodIllumInstructionsPartFeatureComponent;
-  let fixture: ComponentFixture<CodIllumInstructionsPartFeatureComponent>;
+  let component: IcoInstructionsPartFeatureComponent;
+  let fixture: ComponentFixture<IcoInstructionsPartFeatureComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CodIllumInstructionsPartFeatureComponent]
+      imports: [IcoInstructionsPartFeatureComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(CodIllumInstructionsPartFeatureComponent);
+    fixture = TestBed.createComponent(IcoInstructionsPartFeatureComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
