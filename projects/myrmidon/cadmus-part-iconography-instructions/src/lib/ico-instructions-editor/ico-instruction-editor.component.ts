@@ -107,6 +107,9 @@ export class IcoInstructionEditorComponent {
   public featureFlags = computed<Flag[]>(
     () => this.instrFeatEntries()?.map((e) => entryToFlag(e)) || []
   );
+  public languageFlags = computed<Flag[]>(
+    () => this.instrLanguageEntries()?.map((e) => entryToFlag(e)) || []
+  );
 
   // type form
   public type: FormControl<string>;
@@ -119,7 +122,7 @@ export class IcoInstructionEditorComponent {
   public subject: FormControl<string | null>;
   public script: FormControl<string | null>;
   public text: FormControl<string | null>;
-  public sequences: FormControl<string[]>;
+  public sequences: FormControl<string | null>;
   public repertoire: FormControl<string | null>;
   public location: FormControl<string>;
   public position: FormControl<string>;
@@ -173,7 +176,7 @@ export class IcoInstructionEditorComponent {
       null,
       Validators.maxLength(5000)
     );
-    this.sequences = new FormControl<string[]>([], { nonNullable: true });
+    this.sequences = new FormControl<string | null>(null);
     this.repertoire = new FormControl<string | null>(
       null,
       Validators.maxLength(100)
@@ -266,7 +269,10 @@ export class IcoInstructionEditorComponent {
       this.subject.setValue(instruction.subject || null);
       this.script.setValue(instruction.script || null);
       this.text.setValue(instruction.text || null);
-      this.sequences.setValue(instruction.sequences || []);
+      // sequences are in a string with space separator
+      this.sequences.setValue(
+        instruction.sequences?.length ? instruction.sequences.join(' ') : null
+      );
       this.repertoire.setValue(instruction.repertoire || null);
       this.location.setValue(instruction.location || '');
       this.position.setValue(instruction.position || '');
@@ -341,6 +347,12 @@ export class IcoInstructionEditorComponent {
   }
   //#endregion
 
+  public onLanguageCheckedIdsChange(ids: string[]): void {
+    this.languages.setValue(ids);
+    this.languages.markAsDirty();
+    this.languages.updateValueAndValidity();
+  }
+
   public onFeatureCheckedIdsChange(ids: string[]): void {
     this.features.setValue(ids);
     this.features.markAsDirty();
@@ -348,13 +360,15 @@ export class IcoInstructionEditorComponent {
   }
 
   private getInstruction(): IcoInstruction {
+    const sequences = this.sequences.value?.trim()?.split(' ') || [];
+
     return {
       eid: this.eid.value || undefined,
       types: this.types.value,
       subject: this.subject.value || undefined,
       script: this.script.value || '',
       text: this.text.value || undefined,
-      sequences: this.sequences.value,
+      sequences: sequences.length ? sequences : undefined,
       repertoire: this.repertoire.value || undefined,
       location: this.location.value || '',
       position: this.position.value || '',

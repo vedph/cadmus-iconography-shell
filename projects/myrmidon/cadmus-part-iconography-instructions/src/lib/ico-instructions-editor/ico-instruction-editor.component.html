@@ -155,6 +155,95 @@
           }
         </fieldset>
       </div>
+
+      <!-- script -->
+      <div>
+        <!-- script (bound) -->
+        @if (instrScriptEntries()?.length) {
+        <mat-form-field>
+          <mat-label>script</mat-label>
+          <mat-select [formControl]="script">
+            @for (e of instrScriptEntries(); track e.id) {
+            <mat-option [value]="e.id">{{ e.value }}</mat-option>
+            }
+          </mat-select>
+          @if ($any(script).errors?.required && (script.dirty ||
+          script.touched)) {
+          <mat-error>script required</mat-error>
+          }
+        </mat-form-field>
+        } @else {
+        <!-- script (free) -->
+        <mat-form-field>
+          <mat-label>script</mat-label>
+          <input matInput [formControl]="script" />
+          @if ($any(script).errors?.required && (script.dirty ||
+          script.touched)) {
+          <mat-error>script required</mat-error>
+          } @if ($any(script).errors?.maxLength && (script.dirty ||
+          script.touched)) {
+          <mat-error>script too long</mat-error>
+          }
+        </mat-form-field>
+        }
+      </div>
+
+      <div class="form-row">
+        <!-- subject -->
+        <mat-form-field>
+          <mat-label>subject</mat-label>
+          <input matInput [formControl]="subject" />
+          @if ($any(subject).errors?.maxLength && (subject.dirty ||
+          subject.touched)) {
+          <mat-error>subject too long</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- repertoire -->
+        <mat-form-field>
+          <mat-label>repertoire</mat-label>
+          <input matInput [formControl]="repertoire" />
+          @if ($any(repertoire).errors?.maxLength && (repertoire.dirty ||
+          repertoire.touched)) {
+          <mat-error>repertoire too long</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <!-- languages -->
+      @if (languageFlags().length) {
+      <div>
+        <cadmus-ui-flag-set
+          [flags]="languageFlags()"
+          [checkedIds]="languages.value"
+          (checkedIdsChange)="onLanguageCheckedIdsChange($event)"
+        />
+      </div>
+      }
+
+      <!-- text -->
+      <div>
+        <mat-form-field>
+          <mat-label>text</mat-label>
+          <textarea matInput [formControl]="text" rows="3"></textarea>
+          @if ($any(text).errors?.maxLength && (text.dirty || text.touched)) {
+          <mat-error>text too long</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <!-- sequences (space-delimited) -->
+      <div>
+        <mat-form-field>
+          <mat-label>sequences</mat-label>
+          <textarea matInput [formControl]="sequences" rows="3"></textarea>
+          @if ($any(sequences).errors?.maxLength && (sequences.dirty ||
+          sequences.touched)) {
+          <mat-error>sequences too long</mat-error>
+          }
+          <mat-hint>space-delimited</mat-hint>
+        </mat-form-field>
+      </div>
     </mat-tab>
 
     <!-- IMPLEMENTATION -->
