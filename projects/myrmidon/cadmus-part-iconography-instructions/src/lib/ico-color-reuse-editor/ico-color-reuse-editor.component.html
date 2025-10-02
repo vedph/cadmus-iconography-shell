@@ -1,0 +1,71 @@
+<form [formGroup]="form" (submit)="save()">
+  <div class="form-row">
+    <!-- color (bound) -->
+    @if (colorEntries()?.length) {
+    <mat-form-field>
+      <mat-label>color</mat-label>
+      <mat-select [formControl]="color">
+        @for (e of colorEntries(); track e.id) {
+        <mat-option [value]="e.id">{{ e.value }}</mat-option>
+        }
+      </mat-select>
+      @if ($any(color).errors?.required && (color.dirty || color.touched)) {
+      <mat-error>color required</mat-error>
+      }
+    </mat-form-field>
+    } @else {
+    <!-- color (free) -->
+    <mat-form-field>
+      <mat-label>color</mat-label>
+      <input matInput [formControl]="color" />
+      @if ($any(color).errors?.required && (color.dirty || color.touched)) {
+      <mat-error>color required</mat-error>
+      } @if ($any(color).errors?.maxLength && (color.dirty || color.touched)) {
+      <mat-error>color too long</mat-error>
+      }
+    </mat-form-field>
+    }
+
+    <!-- location -->
+    <mat-form-field>
+      <mat-label>location</mat-label>
+      <input matInput [formControl]="location" />
+      @if ($any(location).errors?.required && (location.dirty ||
+      location.touched)) {
+      <mat-error>location required</mat-error>
+      } @if ($any(location).errors?.maxLength && (location.dirty ||
+      location.touched)) {
+      <mat-error>location too long</mat-error>
+      }
+    </mat-form-field>
+  </div>
+
+  <div>
+    <mat-form-field>
+      <mat-label>note</mat-label>
+      <textarea matInput [formControl]="note" rows="3"></textarea>
+      @if ($any(note).errors?.maxLength && (note.dirty || note.touched)) {
+      <mat-error>note too long</mat-error>
+      }
+    </mat-form-field>
+  </div>
+  <!-- buttons -->
+  <div>
+    <button
+      type="button"
+      mat-icon-button
+      matTooltip="Discard changes"
+      (click)="cancel()"
+    >
+      <mat-icon class="mat-warn">clear</mat-icon>
+    </button>
+    <button
+      type="submit"
+      mat-icon-button
+      matTooltip="Accept changes"
+      [disabled]="form.invalid || form.pristine"
+    >
+      <mat-icon class="mat-primary">check_circle</mat-icon>
+    </button>
+  </div>
+</form>

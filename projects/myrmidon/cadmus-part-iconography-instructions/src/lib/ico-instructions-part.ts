@@ -1,7 +1,7 @@
 import { Part } from '@myrmidon/cadmus-core';
 import { AssertedCompositeId } from '@myrmidon/cadmus-refs-asserted-ids';
 import { Assertion } from '@myrmidon/cadmus-refs-assertion';
-import { HistoricalDate } from '@myrmidon/cadmus-refs-historical-date';
+import { HistoricalDateModel } from '@myrmidon/cadmus-refs-historical-date';
 
 /**
  * An implementation difference in an illuminator instruction.
@@ -22,13 +22,19 @@ export interface IcoColorReuse {
 }
 
 /**
+ * A string with an optional tag.
+ */
+export interface TaggedString {
+  tag?: string;
+  value: string;
+}
+
+/**
  * An illuminator instruction.
  */
 export interface IcoInstruction {
   eid?: string;
-  types: string[];
-  prevTypes?: string[];
-  nextTypes?: string[];
+  types: TaggedString[];
   subject?: string;
   script: string;
   text?: string;
@@ -48,7 +54,7 @@ export interface IcoInstruction {
   colors?: string[];
   colorReuses?: IcoColorReuse[];
   links?: AssertedCompositeId[];
-  date?: HistoricalDate;
+  date?: HistoricalDateModel;
   assertion?: Assertion;
 }
 
@@ -90,19 +96,16 @@ export const ICO_INSTRUCTIONS_PART_SCHEMA = {
           types: {
             type: 'array',
             items: {
-              type: 'string',
-            },
-          },
-          prevTypes: {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-          },
-          nextTypes: {
-            type: 'array',
-            items: {
-              type: 'string',
+              type: 'object',
+              properties: {
+                tag: {
+                  type: 'string',
+                },
+                value: {
+                  type: 'string',
+                },
+              },
+              required: ['value'],
             },
           },
           subject: {
