@@ -41,6 +41,7 @@ export class IcoInstructionsPartFeatureComponent
       'ico-instruction-types',
       'ico-instruction-type-tags',
       'ico-instruction-scripts',
+      'ico-instruction-diff-types',
       'ico-instruction-positions',
       'ico-instruction-feats',
       'ico-instruction-languages',
@@ -49,6 +50,8 @@ export class IcoInstructionsPartFeatureComponent
       'assertion-tags',
       'doc-reference-types',
       'doc-reference-tags',
+      'asserted-id-scopes',
+      'asserted-id-tags',
     ];
   }
 }

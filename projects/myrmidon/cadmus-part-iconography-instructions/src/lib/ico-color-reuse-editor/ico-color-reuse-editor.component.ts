@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, model, output, signal } from '@angular/core';
+import { Component, effect, input, model, output } from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -43,9 +43,7 @@ export class IcoColorReuseEditorComponent {
   public readonly cancelEdit = output();
 
   // ico-instruction-colors
-  public readonly colorEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
-  );
+  public readonly colorEntries = input<ThesaurusEntry[] | undefined>(undefined);
 
   public color: FormControl<string>;
   public location: FormControl<string>;

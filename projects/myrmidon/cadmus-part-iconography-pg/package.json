@@ -1,9 +1,23 @@
 {
   "name": "@myrmidon/cadmus-part-iconography-pg",
   "version": "0.0.1",
+  "description": "Cadmus - Iconography parts wrappers.",
+  "keywords": [
+    "Cadmus",
+    "Iconography"
+  ],
+  "homepage": "https://github.com/vedph/cadmus-iconography-shell",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vedph/cadmus-iconography-shell"
+  },
+  "author": {
+    "name": "Daniele Fusi"
+  },
   "peerDependencies": {
-    "@angular/common": "^20.3.0",
-    "@angular/core": "^20.3.0"
+    "@angular/common": "^20.0.0",
+    "@angular/core": "^20.0.0",
+    "@angular/material": "^20.0.0"
   },
   "dependencies": {
     "tslib": "^2.3.0"

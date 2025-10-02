@@ -36,14 +36,15 @@ import {
   IcoInstruction,
   IcoInstructionsPart,
 } from '../ico-instructions-part';
+import { IcoInstructionEditorComponent } from '../ico-instructions-editor/ico-instruction-editor.component';
 
 /**
  * Iconographic instructions part editor component.
- * Thesauri: ico-instruction-types, ico-instruction-scripts,
- * ico-instruction-positions, ico-instruction-feats,
+ * Thesauri: ico-instruction-types, ico-instruction-type-tags, ico-instruction-scripts,
+ * ico-instruction-diff-types, ico-instruction-positions, ico-instruction-feats,
  * ico-instruction-languages, ico-instruction-tools,
  * ico-instruction-colors, assertion-tags, doc-reference-types,
- * doc-reference-tags (all optional).
+ * doc-reference-tags, asserted-id-scopes, asserted-id-tags (all optional).
  */
 @Component({
   selector: 'cadmus-ico-instructions-part',
@@ -61,6 +62,7 @@ import {
     // cadmus
     CloseSaveButtonsComponent,
     FlatLookupPipe,
+    IcoInstructionEditorComponent,
   ],
   templateUrl: './ico-instructions-part.component.html',
   styleUrl: './ico-instructions-part.component.css',
@@ -76,8 +78,16 @@ export class IcoInstructionsPartComponent
   public readonly instrTypeEntries = signal<ThesaurusEntry[] | undefined>(
     undefined
   );
+  // ico-instruction-type-tags
+  public readonly instrTypeTagEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
   // ico-instruction-scripts
   public readonly instrScriptEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
+  // ico-instruction-diff-types
+  public readonly instrDiffTypeEntries = signal<ThesaurusEntry[] | undefined>(
     undefined
   );
   // ico-instruction-positions
@@ -110,6 +120,14 @@ export class IcoInstructionsPartComponent
   );
   // doc-reference-tags
   public readonly docRefTagEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
+  // asserted-id-scopes
+  public readonly assIdScopeEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
+  // asserted-id-tags
+  public readonly assIdTagEntries = signal<ThesaurusEntry[] | undefined>(
     undefined
   );
 
@@ -146,6 +164,12 @@ export class IcoInstructionsPartComponent
     } else {
       this.instrTypeEntries.set(undefined);
     }
+    key = 'ico-instruction-type-tags';
+    if (this.hasThesaurus(key)) {
+      this.instrTypeTagEntries.set(thesauri[key].entries);
+    } else {
+      this.instrTypeTagEntries.set(undefined);
+    }
     key = 'ico-instruction-scripts';
     if (this.hasThesaurus(key)) {
       this.instrScriptEntries.set(thesauri[key].entries);
@@ -157,6 +181,12 @@ export class IcoInstructionsPartComponent
       this.instrPositionEntries.set(thesauri[key].entries);
     } else {
       this.instrPositionEntries.set(undefined);
+    }
+    key = 'ico-instruction-diff-types';
+    if (this.hasThesaurus(key)) {
+      this.instrDiffTypeEntries.set(thesauri[key].entries);
+    } else {
+      this.instrDiffTypeEntries.set(undefined);
     }
     key = 'ico-instruction-feats';
     if (this.hasThesaurus(key)) {
@@ -199,6 +229,18 @@ export class IcoInstructionsPartComponent
       this.docRefTagEntries.set(thesauri[key].entries);
     } else {
       this.docRefTagEntries.set(undefined);
+    }
+    key = 'asserted-id-scopes';
+    if (this.hasThesaurus(key)) {
+      this.assIdScopeEntries.set(thesauri[key].entries);
+    } else {
+      this.assIdScopeEntries.set(undefined);
+    }
+    key = 'asserted-id-tags';
+    if (this.hasThesaurus(key)) {
+      this.assIdTagEntries.set(thesauri[key].entries);
+    } else {
+      this.assIdTagEntries.set(undefined);
     }
   }
 

@@ -318,6 +318,44 @@
           </div>
         </fieldset>
       </div>
+
+      <div>
+        <fieldset>
+          <legend>date</legend>
+          <!-- date-->
+          <mat-checkbox [formControl]="hasDate">date</mat-checkbox>
+          @if (hasDate.value) {
+          <cadmus-refs-historical-date
+            [date]="date.value || undefined"
+            (dateChange)="onDateChange($event!)"
+          />
+          }
+
+          <!-- assertion -->
+          <div>
+            <cadmus-refs-assertion
+              [assTagEntries]="assTagEntries()"
+              [refTagEntries]="docRefTagEntries()"
+              [refTypeEntries]="docRefTypeEntries()"
+              [assertion]="assertion.value || undefined"
+              (assertionChange)="onAssertionChange($event!)"
+            />
+          </div>
+        </fieldset>
+      </div>
+
+      <!-- links -->
+
+      <!-- note -->
+      <div>
+        <mat-form-field class="long-text">
+          <mat-label>note</mat-label>
+          <textarea matInput [formControl]="note" rows="3"></textarea>
+          @if ($any(note).errors?.maxLength && (note.dirty || note.touched)) {
+          <mat-error>note too long</mat-error>
+          }
+        </mat-form-field>
+      </div>
     </mat-tab>
 
     <!-- IMPLEMENTATION -->
@@ -343,7 +381,7 @@
             color="primary"
             (click)="addDiff()"
           >
-            <mat-icon>add_circle</mat-icon> Diff
+            <mat-icon>add_circle</mat-icon> diff
           </button>
         </div>
         @if (differences.value.length) {
@@ -430,8 +468,159 @@
     </mat-tab>
 
     <!-- DESCRIPTION -->
-    <mat-tab label="Description"> </mat-tab>
+    <mat-tab label="Description">
+      <!-- description -->
+      <div>
+        <mat-form-field class="long-text">
+          <mat-label>description</mat-label>
+          <textarea matInput [formControl]="description" rows="3"></textarea>
+          @if ($any(description).errors?.maxLength && (description.dirty ||
+          description.touched)) {
+          <mat-error>description too long</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <!-- features -->
+      @if (featureFlags().length) {
+      <div>
+        <cadmus-ui-flag-set
+          [flags]="featureFlags()"
+          [checkedIds]="features.value"
+          (checkedIdsChange)="onFeatureCheckedIdsChange($event)"
+        />
+      </div>
+      }
+
+      <!-- tools -->
+      @if (toolFlags().length) {
+      <div>
+        <cadmus-ui-flag-set
+          [flags]="toolFlags()"
+          [checkedIds]="tools.value"
+          (checkedIdsChange)="onToolCheckedIdsChange($event)"
+        />
+      </div>
+      }
+
+      <!-- colors -->
+      @if (colorFlags().length) {
+      <div>
+        <cadmus-ui-flag-set
+          [flags]="colorFlags()"
+          [checkedIds]="colors.value"
+          (checkedIdsChange)="onColorCheckedIdsChange($event)"
+        />
+      </div>
+      }
+
+      <!-- color reuses -->
+      <div>
+        <button
+          type="button"
+          mat-flat-button
+          color="primary"
+          (click)="addColorReuse()"
+        >
+          <mat-icon>add_circle</mat-icon> color reuse
+        </button>
+      </div>
+      @if (colorReuses.value.length) {
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>color</th>
+            <th>location</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of colorReuses.value; track entry; let i = $index; let
+          first = $first; let last = $last) {
+          <tr [class.selected]="i === editedReuseIndex()">
+            <td class="fit-width">
+              <button
+                type="button"
+                mat-icon-button
+                color="primary"
+                matTooltip="Edit this color reuse"
+                (click)="editColorReuse(entry, i)"
+              >
+                <mat-icon class="mat-primary">edit</mat-icon>
+              </button>
+              <button
+                type="button"
+                mat-icon-button
+                matTooltip="Move this color reuse up"
+                [disabled]="first"
+                (click)="moveColorReuseUp(i)"
+              >
+                <mat-icon>arrow_upward</mat-icon>
+              </button>
+              <button
+                type="button"
+                mat-icon-button
+                matTooltip="Move this color reuse down"
+                [disabled]="last"
+                (click)="moveColorReuseDown(i)"
+              >
+                <mat-icon>arrow_downward</mat-icon>
+              </button>
+              <button
+                type="button"
+                mat-icon-button
+                color="warn"
+                matTooltip="Delete this color reuse"
+                (click)="deleteColorReuse(i)"
+              >
+                <mat-icon class="mat-warn">remove_circle</mat-icon>
+              </button>
+            </td>
+            <td>
+              {{
+                entry.color | flatLookup : instrColorEntries() : "id" : "value"
+              }}
+            </td>
+            <td>{{ entry.location }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+      } @if (editedReuse()) {
+      <fieldset>
+        <mat-expansion-panel
+          [expanded]="editedReuse()"
+          [disabled]="!editedReuse()"
+        >
+          <mat-expansion-panel-header>
+            <mat-panel-title>Color reuse #</mat-panel-title>
+          </mat-expansion-panel-header>
+          <cadmus-ico-color-reuse-editor
+            [colorEntries]="instrColorEntries()"
+            [reuse]="editedReuse()"
+            (reuseChange)="saveColorReuse($event!)"
+            (cancelEdit)="closeColorReuse()"
+          />
+        </mat-expansion-panel>
+      </fieldset>
+      }
+    </mat-tab>
+
+    <!-- LINKS -->
+    <mat-tab label="Links">
+      <cadmus-refs-asserted-composite-ids
+        [idTagEntries]="assIdTagEntries()"
+        [assTagEntries]="assTagEntries()"
+        [refTagEntries]="docRefTagEntries()"
+        [idScopeEntries]="assIdScopeEntries()"
+        [refTypeEntries]="docRefTypeEntries()"
+        [ids]="links.value"
+        [canSwitchMode]="true"
+        [canEditTarget]="true"
+      />
+    </mat-tab>
   </mat-tab-group>
+
   <!-- buttons -->
   <div>
     <button

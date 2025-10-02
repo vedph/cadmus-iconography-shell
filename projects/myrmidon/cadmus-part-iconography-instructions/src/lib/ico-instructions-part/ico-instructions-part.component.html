@@ -73,15 +73,22 @@
             </td>
             <td>
               @for (type of instruction.types; track type) {
-              <span class="type">{{
-                type | flatLookup : instrTypeEntries() : "id"
-              }}</span>
+              <span class="type"
+                >{{
+                  type.value | flatLookup : instrTypeEntries() : "id" : "value"
+                }}
+                @if (type.tag) { ({{
+                  type.tag
+                    | flatLookup : instrTypeTagEntries() : "id" : "value"
+                }}) }
+              </span>
               }
             </td>
             <td>{{ instruction.location }}</td>
             <td>
               {{
-                instruction.position | flatLookup : instrPositionEntries() : "id"
+                instruction.position
+                  | flatLookup : instrPositionEntries() : "id"
               }}
             </td>
           </tr>
@@ -92,11 +99,27 @@
       <fieldset>
         <mat-expansion-panel [expanded]="edited()" [disabled]="!edited()">
           <mat-expansion-panel-header>
-            <mat-panel-title>instruction #{{ editedIndex() + 1 }}</mat-panel-title>
+            <mat-panel-title
+              >instruction #{{ editedIndex() + 1 }}</mat-panel-title
+            >
           </mat-expansion-panel-header>
-          TODO: editor control with: [model]="edited"
-          (modelChange)="saveInstruction($event)"
-          (editorClose)="closeInstruction()"
+          <cadmus-ico-instructions-editor
+            [assTagEntries]="assTagEntries()"
+            [assIdTagEntries]="assIdTagEntries()"
+            [docRefTagEntries]="docRefTagEntries()"
+            [instrFeatEntries]="instrFeatEntries()"
+            [instrToolEntries]="instrToolEntries()"
+            [instrTypeEntries]="instrTypeEntries()"
+            [assIdScopeEntries]="assIdScopeEntries()"
+            [docRefTypeEntries]="docRefTypeEntries()"
+            [instrColorEntries]="instrColorEntries()"
+            [instrScriptEntries]="instrScriptEntries()"
+            [instrTypeTagEntries]="instrTypeTagEntries()"
+            [instrDiffTypeEntries]="instrDiffTypeEntries()"
+            [instruction]="edited()"
+            (instructionChange)="saveInstruction($event!)"
+            (cancelEdit)="closeInstruction()"
+          />
         </mat-expansion-panel>
       </fieldset>
       }

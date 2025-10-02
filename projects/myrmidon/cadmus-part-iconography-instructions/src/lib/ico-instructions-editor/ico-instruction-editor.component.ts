@@ -46,6 +46,8 @@ import {
   IcoInstructionDiff,
   TaggedString,
 } from '../ico-instructions-part';
+import { IcoInstructionDiffEditorComponent } from '../ico-instruction-diff-editor/ico-instruction-diff-editor.component';
+import { IcoColorReuseEditorComponent } from '../ico-color-reuse-editor/ico-color-reuse-editor.component';
 
 function entryToFlag(entry: ThesaurusEntry): Flag {
   return {
@@ -72,6 +74,8 @@ function entryToFlag(entry: ThesaurusEntry): Flag {
     FlagSetComponent,
     HistoricalDateComponent,
     FlatLookupPipe,
+    IcoInstructionDiffEditorComponent,
+    IcoColorReuseEditorComponent,
   ],
   templateUrl: './ico-instruction-editor.component.html',
   styleUrl: './ico-instruction-editor.component.css',
@@ -105,19 +109,32 @@ export class IcoInstructionEditorComponent {
   public readonly docRefTypeEntries = input<ThesaurusEntry[] | undefined>();
   // doc-reference-tags
   public readonly docRefTagEntries = input<ThesaurusEntry[] | undefined>();
+  // asserted-id-scopes
+  public readonly assIdScopeEntries = input<ThesaurusEntry[] | undefined>();
+  // asserted-id-tags
+  public readonly assIdTagEntries = input<ThesaurusEntry[] | undefined>();
 
   // flags mapped from thesaurus entries
+  public languageFlags = computed<Flag[]>(
+    () => this.instrLanguageEntries()?.map((e) => entryToFlag(e)) || []
+  );
   public featureFlags = computed<Flag[]>(
     () => this.instrFeatEntries()?.map((e) => entryToFlag(e)) || []
   );
-  public languageFlags = computed<Flag[]>(
-    () => this.instrLanguageEntries()?.map((e) => entryToFlag(e)) || []
+  public toolFlags = computed<Flag[]>(
+    () => this.instrToolEntries()?.map((e) => entryToFlag(e)) || []
+  );
+  public colorFlags = computed<Flag[]>(
+    () => this.instrColorEntries()?.map((e) => entryToFlag(e)) || []
   );
 
   public readonly editedDiff = signal<IcoInstructionDiff | undefined>(
     undefined
   );
   public readonly editedDiffIndex = signal<number>(-1);
+
+  public readonly editedReuse = signal<IcoColorReuse | undefined>(undefined);
+  public readonly editedReuseIndex = signal<number>(-1);
 
   // type form
   public type: FormControl<string>;
@@ -432,6 +449,84 @@ export class IcoInstructionEditorComponent {
   }
   //#endregion
 
+  //#region Color Reuses
+  public addColorReuse(): void {
+    const entry: IcoColorReuse = {
+      color: this.instrColorEntries()?.length
+        ? this.instrColorEntries()![0].id
+        : '',
+      location: '',
+    };
+    this.editColorReuse(entry, -1);
+  }
+
+  public editColorReuse(entry: IcoColorReuse, index: number): void {
+    this.editedReuseIndex.set(index);
+    this.editedReuse.set(structuredClone(entry));
+  }
+
+  public closeColorReuse(): void {
+    this.editedReuseIndex.set(-1);
+    this.editedReuse.set(undefined);
+  }
+
+  public saveColorReuse(entry: IcoColorReuse): void {
+    const entries = [...this.colorReuses.value];
+    if (this.editedReuseIndex() === -1) {
+      entries.push(entry);
+    } else {
+      entries.splice(this.editedReuseIndex(), 1, entry);
+    }
+    this.colorReuses.setValue(entries);
+    this.colorReuses.markAsDirty();
+    this.colorReuses.updateValueAndValidity();
+    this.closeColorReuse();
+  }
+
+  public deleteColorReuse(index: number): void {
+    this._dialogService
+      .confirm('Confirmation', `Delete color reuse #${index + 1}?`)
+      .subscribe((yes: boolean | undefined) => {
+        if (yes) {
+          if (this.editedReuseIndex() === index) {
+            this.closeColorReuse();
+          }
+          const entries = [...this.colorReuses.value];
+          entries.splice(index, 1);
+          this.colorReuses.setValue(entries);
+          this.colorReuses.markAsDirty();
+          this.colorReuses.updateValueAndValidity();
+        }
+      });
+  }
+
+  public moveColorReuseUp(index: number): void {
+    if (index < 1) {
+      return;
+    }
+    const entry = this.colorReuses.value[index];
+    const entries = [...this.colorReuses.value];
+    entries.splice(index, 1);
+    entries.splice(index - 1, 0, entry);
+    this.colorReuses.setValue(entries);
+    this.colorReuses.markAsDirty();
+    this.colorReuses.updateValueAndValidity();
+  }
+
+  public moveColorReuseDown(index: number): void {
+    if (index + 1 >= this.colorReuses.value.length) {
+      return;
+    }
+    const entry = this.colorReuses.value[index];
+    const entries = [...this.colorReuses.value];
+    entries.splice(index, 1);
+    entries.splice(index + 1, 0, entry);
+    this.colorReuses.setValue(entries);
+    this.colorReuses.markAsDirty();
+    this.colorReuses.updateValueAndValidity();
+  }
+  //#endregion
+
   public onLanguageCheckedIdsChange(ids: string[]): void {
     this.languages.setValue(ids);
     this.languages.markAsDirty();
@@ -442,6 +537,30 @@ export class IcoInstructionEditorComponent {
     this.features.setValue(ids);
     this.features.markAsDirty();
     this.features.updateValueAndValidity();
+  }
+
+  public onToolCheckedIdsChange(ids: string[]): void {
+    this.tools.setValue(ids);
+    this.tools.markAsDirty();
+    this.tools.updateValueAndValidity();
+  }
+
+  public onColorCheckedIdsChange(ids: string[]): void {
+    this.colors.setValue(ids);
+    this.colors.markAsDirty();
+    this.colors.updateValueAndValidity();
+  }
+
+  public onDateChange(date: HistoricalDateModel | null): void {
+    this.date.setValue(date);
+    this.date.markAsDirty();
+    this.date.updateValueAndValidity();
+  }
+
+  public onAssertionChange(assertion: Assertion | null): void {
+    this.assertion.setValue(assertion);
+    this.assertion.markAsDirty();
+    this.assertion.updateValueAndValidity();
   }
 
   private getInstruction(): IcoInstruction {

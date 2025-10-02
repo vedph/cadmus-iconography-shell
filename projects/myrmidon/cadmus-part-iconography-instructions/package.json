@@ -1,6 +1,19 @@
 {
   "name": "@myrmidon/cadmus-part-iconography-instructions",
   "version": "0.0.1",
+  "description": "Cadmus - Iconography instructions part.",
+  "keywords": [
+    "Cadmus",
+    "Iconography"
+  ],
+  "homepage": "https://github.com/vedph/cadmus-iconography-shell",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vedph/cadmus-iconography-shell"
+  },
+  "author": {
+    "name": "Daniele Fusi"
+  },
   "peerDependencies": {
     "@angular/common": "^20.0.0",
     "@angular/core": "^20.0.0",
