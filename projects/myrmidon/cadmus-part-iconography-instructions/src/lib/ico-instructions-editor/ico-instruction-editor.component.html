@@ -321,7 +321,113 @@
     </mat-tab>
 
     <!-- IMPLEMENTATION -->
-    <mat-tab label="Implementation"> </mat-tab>
+    <mat-tab label="Implementation">
+      <!-- implementation -->
+      <div>
+        <mat-form-field class="long-text">
+          <mat-label>implementation</mat-label>
+          <textarea matInput [formControl]="implementation" rows="3"></textarea>
+          @if ($any(implementation).errors?.maxLength && (implementation.dirty
+          || implementation.touched)) {
+          <mat-error>implementation too long</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <!-- diffs -->
+      <div>
+        <div>
+          <button
+            type="button"
+            mat-flat-button
+            color="primary"
+            (click)="addDiff()"
+          >
+            <mat-icon>add_circle</mat-icon> Diff
+          </button>
+        </div>
+        @if (differences.value.length) {
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>type</th>
+              <th>target</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of differences.value; track entry; let i = $index; let
+            first = $first; let last = $last) {
+            <tr [class.selected]="i === editedDiffIndex()">
+              <td class="fit-width">
+                <button
+                  type="button"
+                  mat-icon-button
+                  color="primary"
+                  matTooltip="Edit this diff"
+                  (click)="editDiff(entry, i)"
+                >
+                  <mat-icon class="mat-primary">edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  mat-icon-button
+                  matTooltip="Move this diff up"
+                  [disabled]="first"
+                  (click)="moveDiffUp(i)"
+                >
+                  <mat-icon>arrow_upward</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  mat-icon-button
+                  matTooltip="Move this diff down"
+                  [disabled]="last"
+                  (click)="moveDiffDown(i)"
+                >
+                  <mat-icon>arrow_downward</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  mat-icon-button
+                  color="warn"
+                  matTooltip="Delete this diff"
+                  (click)="deleteDiff(i)"
+                >
+                  <mat-icon class="mat-warn">remove_circle</mat-icon>
+                </button>
+              </td>
+              <td>
+                {{
+                  entry.type
+                    | flatLookup : instrDiffTypeEntries() : "id" : "value"
+                }}
+              </td>
+              <td>{{ entry.target }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+        } @if (editedDiff()) {
+        <fieldset>
+          <mat-expansion-panel
+            [expanded]="editedDiff()"
+            [disabled]="!editedDiff()"
+          >
+            <mat-expansion-panel-header>
+              <mat-panel-title>Diff #</mat-panel-title>
+            </mat-expansion-panel-header>
+            <cadmus-ico-instruction-diff-editor
+              [instrDiffTypeEntries]="instrDiffTypeEntries()"
+              [diff]="editedDiff()"
+              (diffChange)="saveDiff($event!)"
+              (cancelEdit)="closeDiff()"
+            />
+          </mat-expansion-panel>
+        </fieldset>
+        }
+      </div>
+    </mat-tab>
 
     <!-- DESCRIPTION -->
     <mat-tab label="Description"> </mat-tab>

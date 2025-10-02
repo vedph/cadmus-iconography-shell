@@ -17,6 +17,7 @@ import {
 } from '@angular/forms';
 
 import { MatButtonModule } from '@angular/material/button';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -25,6 +26,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { FlatLookupPipe } from '@myrmidon/ngx-tools';
+import { DialogService } from '@myrmidon/ngx-mat-tools';
 import { Assertion, AssertionComponent } from '@myrmidon/cadmus-refs-assertion';
 import {
   AssertedCompositeId,
@@ -58,6 +60,7 @@ function entryToFlag(entry: ThesaurusEntry): Flag {
     CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
+    MatExpansionModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -111,6 +114,11 @@ export class IcoInstructionEditorComponent {
     () => this.instrLanguageEntries()?.map((e) => entryToFlag(e)) || []
   );
 
+  public readonly editedDiff = signal<IcoInstructionDiff | undefined>(
+    undefined
+  );
+  public readonly editedDiffIndex = signal<number>(-1);
+
   // type form
   public type: FormControl<string>;
   public typeTag: FormControl<string | null>;
@@ -143,7 +151,7 @@ export class IcoInstructionEditorComponent {
   public assertion: FormControl<Assertion | null>;
   public form: FormGroup;
 
-  constructor(formBuilder: FormBuilder) {
+  constructor(formBuilder: FormBuilder, private _dialogService: DialogService) {
     // type form
     this.type = new FormControl('', {
       nonNullable: true,
@@ -344,6 +352,83 @@ export class IcoInstructionEditorComponent {
     this.types.setValue(types);
     this.types.markAsDirty();
     this.types.updateValueAndValidity();
+  }
+  //#endregion
+
+  //#region Diffs
+  public addDiff(): void {
+    const entry: IcoInstructionDiff = {
+      type: this.instrDiffTypeEntries()?.length
+        ? this.instrDiffTypeEntries()![0].id
+        : '',
+    };
+    this.editDiff(entry, -1);
+  }
+
+  public editDiff(entry: IcoInstructionDiff, index: number): void {
+    this.editedDiffIndex.set(index);
+    this.editedDiff.set(structuredClone(entry));
+  }
+
+  public closeDiff(): void {
+    this.editedDiffIndex.set(-1);
+    this.editedDiff.set(undefined);
+  }
+
+  public saveDiff(entry: IcoInstructionDiff): void {
+    const differences = [...this.differences.value];
+    if (this.editedDiffIndex() === -1) {
+      differences.push(entry);
+    } else {
+      differences.splice(this.editedDiffIndex(), 1, entry);
+    }
+    this.differences.setValue(differences);
+    this.differences.markAsDirty();
+    this.differences.updateValueAndValidity();
+    this.closeDiff();
+  }
+
+  public deleteDiff(index: number): void {
+    this._dialogService
+      .confirm('Confirmation', `Delete diff #${index + 1}?`)
+      .subscribe((yes: boolean | undefined) => {
+        if (yes) {
+          if (this.editedDiffIndex() === index) {
+            this.closeDiff();
+          }
+          const differences = [...this.differences.value];
+          differences.splice(index, 1);
+          this.differences.setValue(differences);
+          this.differences.markAsDirty();
+          this.differences.updateValueAndValidity();
+        }
+      });
+  }
+
+  public moveDiffUp(index: number): void {
+    if (index < 1) {
+      return;
+    }
+    const difference = this.differences.value[index];
+    const differences = [...this.differences.value];
+    differences.splice(index, 1);
+    differences.splice(index - 1, 0, difference);
+    this.differences.setValue(differences);
+    this.differences.markAsDirty();
+    this.differences.updateValueAndValidity();
+  }
+
+  public moveDiffDown(index: number): void {
+    if (index + 1 >= this.differences.value.length) {
+      return;
+    }
+    const difference = this.differences.value[index];
+    const differences = [...this.differences.value];
+    differences.splice(index, 1);
+    differences.splice(index + 1, 0, difference);
+    this.differences.setValue(differences);
+    this.differences.markAsDirty();
+    this.differences.updateValueAndValidity();
   }
   //#endregion
 
