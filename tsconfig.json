@@ -3,6 +3,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "forceConsistentCasingInFileNames": true,
     "paths": {
       "@myrmidon/cadmus-part-iconography-instructions": [
         "./dist/myrmidon/cadmus-part-iconography-instructions"
@@ -31,13 +32,5 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true
-  },
-  "references": [
-    {
-      "path": "./projects/myrmidon/cadmus-part-iconography-pg/tsconfig.lib.json"
-    },
-    {
-      "path": "./projects/myrmidon/cadmus-part-iconography-pg/tsconfig.spec.json"
-    }
-  ]
+  }
 }

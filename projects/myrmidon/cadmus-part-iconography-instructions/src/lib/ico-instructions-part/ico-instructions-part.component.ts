@@ -36,7 +36,7 @@ import {
   IcoInstruction,
   IcoInstructionsPart,
 } from '../ico-instructions-part';
-import { IcoInstructionEditorComponent } from '../ico-instructions-editor/ico-instruction-editor.component';
+import { IcoInstructionEditorComponent } from '../ico-instruction-editor/ico-instruction-editor.component';
 
 /**
  * Iconographic instructions part editor component.
