@@ -187,7 +187,7 @@ export class IcoInstructionEditorComponent {
     });
     this.position = new FormControl<string>('', {
       nonNullable: true,
-      validators: Validators.maxLength(100),
+      validators: [Validators.required, Validators.maxLength(100)],
     });
     this.positionNote = new FormControl<string | null>(
       null,

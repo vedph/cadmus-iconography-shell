@@ -234,7 +234,7 @@
 
       <!-- sequences (space-delimited) -->
       <div>
-        <mat-form-field>
+        <mat-form-field class="long-text">
           <mat-label>sequences</mat-label>
           <textarea matInput [formControl]="sequences" rows="3"></textarea>
           @if ($any(sequences).errors?.maxLength && (sequences.dirty ||
@@ -243,6 +243,80 @@
           }
           <mat-hint>space-delimited</mat-hint>
         </mat-form-field>
+      </div>
+
+      <!-- locations -->
+      <div class="form-row">
+        <!-- location -->
+        <mat-form-field>
+          <mat-label>location</mat-label>
+          <input matInput [formControl]="location" />
+          @if ($any(location).errors?.maxLength && (location.dirty ||
+          location.touched)) {
+          <mat-error>location too long</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- target location -->
+        <mat-form-field>
+          <mat-label>target location</mat-label>
+          <input matInput [formControl]="targetLocation" />
+          @if ($any(targetLocation).errors?.maxLength && (targetLocation.dirty
+          || targetLocation.touched)) {
+          <mat-error>target location too long</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <!-- position -->
+      <div>
+        <fieldset>
+          <legend>position</legend>
+          <div class="form-row">
+            <!-- position (bound) -->
+            @if (instrPositionEntries()?.length) {
+            <mat-form-field>
+              <mat-label>position</mat-label>
+              <mat-select [formControl]="position">
+                @for (e of instrPositionEntries(); track e.id) {
+                <mat-option [value]="e.id">{{ e.value }}</mat-option>
+                }
+              </mat-select>
+              @if ($any(position).errors?.required && (position.dirty ||
+              position.touched)) {
+              <mat-error>position required</mat-error>
+              }
+            </mat-form-field>
+            } @else {
+            <!-- position (free) -->
+            <mat-form-field>
+              <mat-label>position</mat-label>
+              <input matInput [formControl]="position" />
+              @if ($any(position).errors?.required && (position.dirty ||
+              position.touched)) {
+              <mat-error>position required</mat-error>
+              } @if ($any(position).errors?.maxLength && (position.dirty ||
+              position.touched)) {
+              <mat-error>position too long</mat-error>
+              }
+            </mat-form-field>
+            }
+
+            <!-- positionNote -->
+            <mat-form-field class="long-text">
+              <mat-label>position note</mat-label>
+              <textarea
+                matInput
+                [formControl]="positionNote"
+                rows="3"
+              ></textarea>
+              @if ($any(positionNote).errors?.maxLength && (positionNote.dirty
+              || positionNote.touched)) {
+              <mat-error>position note too long</mat-error>
+              }
+            </mat-form-field>
+          </div>
+        </fieldset>
       </div>
     </mat-tab>
 
