@@ -38,3 +38,6 @@ td.fit-width {
 tr.selected {
   background-color: #d0d0d0 !important;
 }
+.mt {
+  margin-top: 8px;
+}

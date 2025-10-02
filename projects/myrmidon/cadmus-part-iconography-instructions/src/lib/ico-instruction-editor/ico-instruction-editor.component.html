@@ -156,7 +156,7 @@
       </div>
 
       <!-- script -->
-      <div>
+      <div class="form-row mt">
         <!-- script (bound) -->
         @if (instrScriptEntries()?.length) {
         <mat-form-field>
@@ -185,9 +185,7 @@
           }
         </mat-form-field>
         }
-      </div>
 
-      <div class="form-row">
         <!-- subject -->
         <mat-form-field>
           <mat-label>subject</mat-label>
@@ -222,7 +220,7 @@
 
       <!-- text -->
       <div>
-        <mat-form-field>
+        <mat-form-field class="long-text">
           <mat-label>text</mat-label>
           <textarea matInput [formControl]="text" rows="3"></textarea>
           @if ($any(text).errors?.maxLength && (text.dirty || text.touched)) {
@@ -235,7 +233,7 @@
       <div>
         <mat-form-field class="long-text">
           <mat-label>sequences</mat-label>
-          <textarea matInput [formControl]="sequences" rows="3"></textarea>
+          <textarea matInput [formControl]="sequences"></textarea>
           @if ($any(sequences).errors?.maxLength && (sequences.dirty ||
           sequences.touched)) {
           <mat-error>sequences too long</mat-error>
@@ -245,7 +243,7 @@
       </div>
 
       <!-- locations -->
-      <div class="form-row">
+      <div class="form-row mt">
         <!-- location -->
         <mat-form-field>
           <mat-label>location</mat-label>
@@ -304,11 +302,7 @@
             <!-- positionNote -->
             <mat-form-field class="long-text">
               <mat-label>position note</mat-label>
-              <textarea
-                matInput
-                [formControl]="positionNote"
-                rows="3"
-              ></textarea>
+              <textarea matInput [formControl]="positionNote"></textarea>
               @if ($any(positionNote).errors?.maxLength && (positionNote.dirty
               || positionNote.touched)) {
               <mat-error>position note too long</mat-error>
@@ -332,19 +326,22 @@
 
           <!-- assertion -->
           <div>
-            <cadmus-refs-assertion
-              [assTagEntries]="assTagEntries()"
-              [refTagEntries]="docRefTagEntries()"
-              [refTypeEntries]="docRefTypeEntries()"
-              [assertion]="assertion.value || undefined"
-              (assertionChange)="onAssertionChange($event!)"
-            />
+            <fieldset>
+              <legend>assertion</legend>
+              <cadmus-refs-assertion
+                [assTagEntries]="assTagEntries()"
+                [refTagEntries]="docRefTagEntries()"
+                [refTypeEntries]="docRefTypeEntries()"
+                [assertion]="assertion.value || undefined"
+                (assertionChange)="onAssertionChange($event!)"
+              />
+            </fieldset>
           </div>
         </fieldset>
       </div>
 
       <!-- note -->
-      <div>
+      <div class="mt">
         <mat-form-field class="long-text">
           <mat-label>note</mat-label>
           <textarea matInput [formControl]="note" rows="3"></textarea>
@@ -481,38 +478,47 @@
       <!-- features -->
       @if (featureFlags().length) {
       <div>
-        <cadmus-ui-flag-set
-          [flags]="featureFlags()"
-          [checkedIds]="features.value"
-          (checkedIdsChange)="onFeatureCheckedIdsChange($event)"
-        />
+        <fieldset>
+          <legend>features</legend>
+          <cadmus-ui-flag-set
+            [flags]="featureFlags()"
+            [checkedIds]="features.value"
+            (checkedIdsChange)="onFeatureCheckedIdsChange($event)"
+          />
+        </fieldset>
       </div>
       }
 
       <!-- tools -->
       @if (toolFlags().length) {
       <div>
-        <cadmus-ui-flag-set
-          [flags]="toolFlags()"
-          [checkedIds]="tools.value"
-          (checkedIdsChange)="onToolCheckedIdsChange($event)"
-        />
+        <fieldset>
+          <legend>tools</legend>
+          <cadmus-ui-flag-set
+            [flags]="toolFlags()"
+            [checkedIds]="tools.value"
+            (checkedIdsChange)="onToolCheckedIdsChange($event)"
+          />
+        </fieldset>
       </div>
       }
 
       <!-- colors -->
       @if (colorFlags().length) {
       <div>
-        <cadmus-ui-flag-set
-          [flags]="colorFlags()"
-          [checkedIds]="colors.value"
-          (checkedIdsChange)="onColorCheckedIdsChange($event)"
-        />
+        <fieldset>
+          <legend>colors</legend>
+          <cadmus-ui-flag-set
+            [flags]="colorFlags()"
+            [checkedIds]="colors.value"
+            (checkedIdsChange)="onColorCheckedIdsChange($event)"
+          />
+        </fieldset>
       </div>
       }
 
       <!-- color reuses -->
-      <div>
+      <div class="mt">
         <button
           type="button"
           mat-flat-button

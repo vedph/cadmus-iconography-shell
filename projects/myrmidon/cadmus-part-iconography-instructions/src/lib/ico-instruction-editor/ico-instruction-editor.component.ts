@@ -48,6 +48,7 @@ import {
 } from '../ico-instructions-part';
 import { IcoInstructionDiffEditorComponent } from '../ico-instruction-diff-editor/ico-instruction-diff-editor.component';
 import { IcoColorReuseEditorComponent } from '../ico-color-reuse-editor/ico-color-reuse-editor.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 function entryToFlag(entry: ThesaurusEntry): Flag {
   return {
@@ -62,6 +63,7 @@ function entryToFlag(entry: ThesaurusEntry): Flag {
     CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatExpansionModule,
     MatFormFieldModule,
     MatIconModule,
