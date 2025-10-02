@@ -1,5 +1,168 @@
 <form [formGroup]="form" (submit)="save()">
-  TODO
+  <mat-tab-group>
+    <!-- GENERAL -->
+    <mat-tab label="General">
+      <!-- eid -->
+      <div>
+        <mat-form-field>
+          <mat-label>EID</mat-label>
+          <input matInput [formControl]="eid" />
+          @if ($any(eid).errors?.maxLength && (eid.dirty || eid.touched)) {
+          <mat-error>EID too long</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <!-- types -->
+      <div>
+        <fieldset>
+          <legend>types</legend>
+          <!-- new type form -->
+          <form [formGroup]="typeForm" (submit)="addType()">
+            <fieldset>
+              <div class="form-row">
+                <!-- type (bound) -->
+                @if (instrTypeEntries()?.length) {
+                <mat-form-field>
+                  <mat-label>type</mat-label>
+                  <mat-select [formControl]="type">
+                    @for (e of instrTypeEntries(); track e.id) {
+                    <mat-option [value]="e.id">{{ e.value }}</mat-option>
+                    }
+                  </mat-select>
+                  @if ($any(type).errors?.required && (type.dirty ||
+                  type.touched)) {
+                  <mat-error>type required</mat-error>
+                  }
+                </mat-form-field>
+                } @else {
+                <!-- type (free) -->
+                <mat-form-field>
+                  <mat-label>type</mat-label>
+                  <input matInput [formControl]="type" />
+                  @if ($any(type).errors?.required && (type.dirty ||
+                  type.touched)) {
+                  <mat-error>type required</mat-error>
+                  } @if ($any(type).errors?.maxLength && (type.dirty ||
+                  type.touched)) {
+                  <mat-error>type too long</mat-error>
+                  }
+                </mat-form-field>
+                }
+
+                <!-- typeTag (bound) -->
+                @if (instrTypeTagEntries()?.length) {
+                <mat-form-field>
+                  <mat-label>typeTag</mat-label>
+                  <mat-select [formControl]="typeTag">
+                    @for (e of instrTypeTagEntries(); track e.id) {
+                    <mat-option [value]="e.id">{{ e.value }}</mat-option>
+                    }
+                  </mat-select>
+                  @if ($any(typeTag).errors?.required && (typeTag.dirty ||
+                  typeTag.touched)) {
+                  <mat-error>typeTag required</mat-error>
+                  }
+                </mat-form-field>
+                } @else {
+                <!-- typeTag (free) -->
+                <mat-form-field>
+                  <mat-label>typeTag</mat-label>
+                  <input matInput [formControl]="typeTag" />
+                  @if ($any(typeTag).errors?.required && (typeTag.dirty ||
+                  typeTag.touched)) {
+                  <mat-error>typeTag required</mat-error>
+                  } @if ($any(typeTag).errors?.maxLength && (typeTag.dirty ||
+                  typeTag.touched)) {
+                  <mat-error>typeTag too long</mat-error>
+                  }
+                </mat-form-field>
+                }
+
+                <!-- add button -->
+                <button
+                  type="submit"
+                  mat-icon-button
+                  matTooltip="Add type"
+                  [disabled]="typeForm.invalid"
+                >
+                  <mat-icon class="mat-primary">add_circle</mat-icon>
+                </button>
+              </div>
+            </fieldset>
+          </form>
+
+          <!-- types list -->
+          @if (types.value.length) {
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>type</th>
+                <th>tag</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of types.value; track entry; let i = $index; let first
+              = $first; let last = $last) {
+              <tr>
+                <td class="fit-width">
+                  <button
+                    type="button"
+                    mat-icon-button
+                    matTooltip="Move this type up"
+                    [disabled]="first"
+                    (click)="moveTypeUp(i)"
+                  >
+                    <mat-icon>arrow_upward</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    mat-icon-button
+                    matTooltip="Move this type down"
+                    [disabled]="last"
+                    (click)="moveTypeDown(i)"
+                  >
+                    <mat-icon>arrow_downward</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    mat-icon-button
+                    color="warn"
+                    matTooltip="Delete this type"
+                    (click)="deleteType(i)"
+                  >
+                    <mat-icon class="mat-warn">remove_circle</mat-icon>
+                  </button>
+                </td>
+                <td>
+                  {{
+                    entry.value
+                      | flatLookup : instrTypeEntries() : "id" : "value"
+                  }}
+                </td>
+                <td>
+                  {{
+                    entry.tag
+                      | flatLookup : instrTypeTagEntries() : "id" : "value"
+                  }}
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+
+          }
+        </fieldset>
+      </div>
+    </mat-tab>
+
+    <!-- IMPLEMENTATION -->
+    <mat-tab label="Implementation"> </mat-tab>
+
+    <!-- DESCRIPTION -->
+    <mat-tab label="Description"> </mat-tab>
+  </mat-tab-group>
   <!-- buttons -->
   <div>
     <button

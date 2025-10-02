@@ -1,12 +1,12 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
-  OnInit,
   computed,
   effect,
   input,
   model,
   output,
+  signal,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -20,6 +20,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -54,11 +55,13 @@ function entryToFlag(entry: ThesaurusEntry): Flag {
 @Component({
   selector: 'cadmus-ico-instructions-editor',
   imports: [
+    CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatSelectModule,
     MatTabsModule,
     MatTooltipModule,
     AssertedCompositeIdsComponent,
@@ -105,6 +108,12 @@ export class IcoInstructionEditorComponent {
     () => this.instrFeatEntries()?.map((e) => entryToFlag(e)) || []
   );
 
+  // type form
+  public type: FormControl<string>;
+  public typeTag: FormControl<string | null>;
+  public typeForm: FormGroup;
+
+  // form
   public eid: FormControl<string | null>;
   public types: FormControl<TaggedString[]>;
   public subject: FormControl<string | null>;
@@ -132,6 +141,20 @@ export class IcoInstructionEditorComponent {
   public form: FormGroup;
 
   constructor(formBuilder: FormBuilder) {
+    // type form
+    this.type = new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(100)],
+    });
+    this.typeTag = new FormControl<string | null>(null, {
+      nonNullable: false,
+      validators: Validators.maxLength(100),
+    });
+    this.typeForm = formBuilder.group({
+      type: this.type,
+      typeTag: this.typeTag,
+    });
+
     // form
     this.eid = new FormControl<string | null>(null, Validators.maxLength(100));
     this.types = new FormControl<TaggedString[]>([], {
@@ -265,6 +288,58 @@ export class IcoInstructionEditorComponent {
       this.form.markAsPristine();
     }
   }
+
+  //#region Types
+  public addType(): void {
+    if (this.typeForm.invalid) {
+      this.typeForm.markAllAsTouched();
+      return;
+    }
+    const types = [...this.types.value];
+    types.push({
+      value: this.type.value.trim(),
+      tag: this.typeTag.value?.trim() || undefined,
+    });
+    this.types.setValue(types);
+    this.types.markAsDirty();
+    this.types.updateValueAndValidity();
+    this.typeForm.reset();
+  }
+
+  public deleteType(index: number): void {
+    const types = [...this.types.value];
+    types.splice(index, 1);
+    this.types.setValue(types);
+    this.types.markAsDirty();
+    this.types.updateValueAndValidity();
+  }
+
+  public moveTypeUp(index: number): void {
+    if (index < 1) {
+      return;
+    }
+    const type = this.types.value[index];
+    const types = [...this.types.value];
+    types.splice(index, 1);
+    types.splice(index - 1, 0, type);
+    this.types.setValue(types);
+    this.types.markAsDirty();
+    this.types.updateValueAndValidity();
+  }
+
+  public moveTypeDown(index: number): void {
+    if (index + 1 >= this.types.value.length) {
+      return;
+    }
+    const type = this.types.value[index];
+    const types = [...this.types.value];
+    types.splice(index, 1);
+    types.splice(index + 1, 0, type);
+    this.types.setValue(types);
+    this.types.markAsDirty();
+    this.types.updateValueAndValidity();
+  }
+  //#endregion
 
   public onFeatureCheckedIdsChange(ids: string[]): void {
     this.features.setValue(ids);
