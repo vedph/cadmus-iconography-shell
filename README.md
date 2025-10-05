@@ -4,6 +4,7 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## History
 
+- 2025-10-05: fixes.
 - 2025-10-02: completed iconography instructions part.
 - 2025-09-27:
   - updated packages.
