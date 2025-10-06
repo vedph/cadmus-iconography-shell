@@ -17,6 +17,7 @@ import {
 } from '@angular/forms';
 
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -38,6 +39,10 @@ import {
 } from '@myrmidon/cadmus-refs-historical-date';
 
 import { ThesaurusEntry } from '@myrmidon/cadmus-core';
+import {
+  renderLabelFromLastColon,
+  ThesaurusTreeComponent,
+} from '@myrmidon/cadmus-ui';
 import { Flag, FlagSetComponent } from '@myrmidon/cadmus-ui-flag-set';
 
 import {
@@ -48,7 +53,6 @@ import {
 } from '../ico-instructions-part';
 import { IcoInstructionDiffEditorComponent } from '../ico-instruction-diff-editor/ico-instruction-diff-editor.component';
 import { IcoColorReuseEditorComponent } from '../ico-color-reuse-editor/ico-color-reuse-editor.component';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 
 function entryToFlag(entry: ThesaurusEntry): Flag {
   return {
@@ -78,6 +82,7 @@ function entryToFlag(entry: ThesaurusEntry): Flag {
     FlatLookupPipe,
     IcoInstructionDiffEditorComponent,
     IcoColorReuseEditorComponent,
+    ThesaurusTreeComponent,
   ],
   templateUrl: './ico-instruction-editor.component.html',
   styleUrl: './ico-instruction-editor.component.css',
@@ -91,6 +96,8 @@ export class IcoInstructionEditorComponent {
   public readonly instrTypeTagEntries = input<ThesaurusEntry[] | undefined>();
   // ico-instruction-types
   public readonly instrTypeEntries = input<ThesaurusEntry[] | undefined>();
+  // ico-instruction-subjects
+  public readonly instrSubjectEntries = input<ThesaurusEntry[] | undefined>();
   // ico-instruction-scripts
   public readonly instrScriptEntries = input<ThesaurusEntry[] | undefined>();
   // ico-instruction-positions
@@ -563,6 +570,16 @@ export class IcoInstructionEditorComponent {
     this.assertion.setValue(assertion);
     this.assertion.markAsDirty();
     this.assertion.updateValueAndValidity();
+  }
+
+  public renderLabel(label: string): string {
+    return renderLabelFromLastColon(label);
+  }
+
+  public onEntryChange(entry: ThesaurusEntry): void {
+    this.subject.setValue(entry.value);
+    this.subject.markAsDirty();
+    this.subject.updateValueAndValidity();
   }
 
   private getInstruction(): IcoInstruction {

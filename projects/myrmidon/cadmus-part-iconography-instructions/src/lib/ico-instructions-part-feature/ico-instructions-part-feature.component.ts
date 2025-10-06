@@ -40,6 +40,7 @@ export class IcoInstructionsPartFeatureComponent
     return [
       'ico-instruction-types',
       'ico-instruction-type-tags',
+      'ico-instruction-subjects',
       'ico-instruction-scripts',
       'ico-instruction-diff-types',
       'ico-instruction-positions',

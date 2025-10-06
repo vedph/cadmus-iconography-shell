@@ -40,9 +40,9 @@ import { IcoInstructionEditorComponent } from '../ico-instruction-editor/ico-ins
 
 /**
  * Iconographic instructions part editor component.
- * Thesauri: ico-instruction-types, ico-instruction-type-tags, ico-instruction-scripts,
- * ico-instruction-diff-types, ico-instruction-positions, ico-instruction-feats,
- * ico-instruction-languages, ico-instruction-tools,
+ * Thesauri: ico-instruction-types, ico-instruction-subjects, ico-instruction-type-tags,
+ * ico-instruction-scripts, ico-instruction-diff-types, ico-instruction-positions,
+ * ico-instruction-feats, ico-instruction-languages, ico-instruction-tools,
  * ico-instruction-colors, assertion-tags, doc-reference-types,
  * doc-reference-tags, asserted-id-scopes, asserted-id-tags (all optional).
  */
@@ -80,6 +80,10 @@ export class IcoInstructionsPartComponent
   );
   // ico-instruction-type-tags
   public readonly instrTypeTagEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined
+  );
+  // ico-instruction-subjects
+  public readonly instrSubjectEntries = signal<ThesaurusEntry[] | undefined>(
     undefined
   );
   // ico-instruction-scripts
@@ -163,6 +167,12 @@ export class IcoInstructionsPartComponent
       this.instrTypeEntries.set(thesauri[key].entries);
     } else {
       this.instrTypeEntries.set(undefined);
+    }
+    key = 'ico-instruction-subjects';
+    if (this.hasThesaurus(key)) {
+      this.instrSubjectEntries.set(thesauri[key].entries);
+    } else {
+      this.instrSubjectEntries.set(undefined);
     }
     key = 'ico-instruction-type-tags';
     if (this.hasThesaurus(key)) {

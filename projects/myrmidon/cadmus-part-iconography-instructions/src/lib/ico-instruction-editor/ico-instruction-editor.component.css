@@ -41,3 +41,9 @@ tr.selected {
 .mt {
   margin-top: 8px;
 }
+#selected-subject {
+  border: 1px solid silver;
+  border-radius: 4px;
+  padding: 4px;
+  margin: 8px 0;
+}

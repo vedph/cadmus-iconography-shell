@@ -184,8 +184,7 @@
           <mat-error>script too long</mat-error>
           }
         </mat-form-field>
-        }
-
+        } @if (!instrSubjectEntries()?.length) {
         <!-- subject -->
         <mat-form-field>
           <mat-label>subject</mat-label>
@@ -195,6 +194,7 @@
           <mat-error>subject too long</mat-error>
           }
         </mat-form-field>
+        }
 
         <!-- repertoire -->
         <mat-form-field>
@@ -206,6 +206,21 @@
           }
         </mat-form-field>
       </div>
+
+      @if (instrSubjectEntries()?.length) {
+      <div>
+        <fieldset>
+          <legend>subject</legend>
+          <div id="selected-subject">{{ subject.value }}</div>
+          <cadmus-thesaurus-tree
+            [entries]="instrSubjectEntries()"
+            rootLabel="subjects"
+            [renderLabel]="renderLabel"
+            (entryChange)="onEntryChange($event)"
+          />
+        </fieldset>
+      </div>
+      }
 
       <!-- languages -->
       @if (languageFlags().length) {
