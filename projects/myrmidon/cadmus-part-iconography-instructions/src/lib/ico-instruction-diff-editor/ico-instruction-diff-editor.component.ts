@@ -17,8 +17,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { IcoInstructionDiff } from '../ico-instructions-part';
 import { ThesaurusEntry } from '@myrmidon/cadmus-core';
+
+import { IcoInstructionDiff } from '../ico-instructions-part';
 
 @Component({
   selector: 'cadmus-ico-instruction-diff-editor',
@@ -50,7 +51,7 @@ export class IcoInstructionDiffEditorComponent {
 
   constructor(formBuilder: FormBuilder) {
     // form
-    this.type = formBuilder.control('text', {
+    this.type = formBuilder.control('', {
       nonNullable: true,
       validators: [Validators.required, Validators.maxLength(100)],
     });
@@ -73,7 +74,7 @@ export class IcoInstructionDiffEditorComponent {
     if (!data) {
       this.form.reset();
     } else {
-      this.type.setValue(data.type || 'text');
+      this.type.setValue(data.type || '');
       this.target.setValue(data.target || null);
       this.note.setValue(data.note || null);
       this.form.markAsPristine();
