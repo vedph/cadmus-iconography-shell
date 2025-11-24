@@ -4,6 +4,10 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## History
 
+- 2025-11-24:
+  - ⚠️ upgraded to Angular 21.
+  - migrated to `pnpm`.
+
 ### 0.0.1
 
 - 2025-10-06:
