@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
@@ -64,7 +63,6 @@ function entryToFlag(entry: ThesaurusEntry): Flag {
 @Component({
   selector: 'cadmus-ico-instructions-editor',
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatCheckboxModule,

@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, effect, input, model, output } from '@angular/core';
 import {
   FormBuilder,
@@ -25,7 +24,6 @@ import { IcoColorReuse } from '../ico-instructions-part';
 @Component({
   selector: 'cadmus-ico-color-reuse-editor',
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatCheckboxModule,

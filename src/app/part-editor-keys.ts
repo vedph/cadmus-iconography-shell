@@ -1,5 +1,8 @@
 import { PartEditorKeys } from '@myrmidon/cadmus-core';
-import { METADATA_PART_TYPEID } from '@myrmidon/cadmus-part-general-ui';
+import {
+  METADATA_PART_TYPEID,
+  NOTE_PART_TYPEID,
+} from '@myrmidon/cadmus-part-general-ui';
 import { ICO_INSTRUCTIONS_PART_TYPEID } from '@myrmidon/cadmus-part-iconography-instructions';
 
 const GENERAL = 'general';
@@ -13,6 +16,9 @@ const ICONOGRAPHY = 'iconography';
  */
 export const PART_EDITOR_KEYS: PartEditorKeys = {
   [METADATA_PART_TYPEID]: {
+    part: GENERAL,
+  },
+  [NOTE_PART_TYPEID]: {
     part: GENERAL,
   },
   [ICO_INSTRUCTIONS_PART_TYPEID]: {

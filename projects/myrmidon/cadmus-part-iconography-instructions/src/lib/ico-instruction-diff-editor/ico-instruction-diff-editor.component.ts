@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, effect, input, model, output } from '@angular/core';
 import {
   FormBuilder,
@@ -24,7 +23,6 @@ import { IcoInstructionDiff } from '../ico-instructions-part';
 @Component({
   selector: 'cadmus-ico-instruction-diff-editor',
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatCheckboxModule,
