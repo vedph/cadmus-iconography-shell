@@ -53,6 +53,7 @@ export class IcoInstructionsPartFeatureComponent
       'doc-reference-tags',
       'asserted-id-scopes',
       'asserted-id-tags',
+      'asserted-id-features',
     ];
   }
 }

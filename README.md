@@ -4,6 +4,11 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## History
 
+### 0.0.3
+
+- 2026-01-18:
+  - updated packages adding `@myrmidon/cadmus-thesaurus-store`.
+  - added `asserted-id-features` thesaurus to instructions part.
 - 2025-11-24:
   - ⚠️ upgraded to Angular 21.
   - migrated to `pnpm`.

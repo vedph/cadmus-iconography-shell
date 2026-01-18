@@ -41,7 +41,7 @@ import { ThesaurusEntry } from '@myrmidon/cadmus-core';
 import {
   renderLabelFromLastColon,
   ThesaurusTreeComponent,
-} from '@myrmidon/cadmus-ui';
+} from '@myrmidon/cadmus-thesaurus-store';
 import { Flag, FlagSetComponent } from '@myrmidon/cadmus-ui-flag-set';
 
 import {
@@ -120,6 +120,8 @@ export class IcoInstructionEditorComponent {
   public readonly assIdScopeEntries = input<ThesaurusEntry[] | undefined>();
   // asserted-id-tags
   public readonly assIdTagEntries = input<ThesaurusEntry[] | undefined>();
+  // asserted-id-features
+  public readonly idFeatureEntries = input<ThesaurusEntry[] | undefined>();
 
   // flags mapped from thesaurus entries
   public languageFlags = computed<Flag[]>(

@@ -44,7 +44,8 @@ import { IcoInstructionEditorComponent } from '../ico-instruction-editor/ico-ins
  * ico-instruction-scripts, ico-instruction-diff-types, ico-instruction-positions,
  * ico-instruction-feats, ico-instruction-languages, ico-instruction-tools,
  * ico-instruction-colors, assertion-tags, doc-reference-types,
- * doc-reference-tags, asserted-id-scopes, asserted-id-tags (all optional).
+ * doc-reference-tags, asserted-id-scopes, asserted-id-tags, asserted-id-features
+ * (all optional).
  */
 @Component({
   selector: 'cadmus-ico-instructions-part',
@@ -134,6 +135,8 @@ export class IcoInstructionsPartComponent
   public readonly assIdTagEntries = signal<ThesaurusEntry[] | undefined>(
     undefined
   );
+  // asserted-id-features
+  public readonly assIdFeatureEntries = signal<ThesaurusEntry[] | undefined>(undefined);
 
   public instructions: FormControl<IcoInstruction[]>;
 
@@ -251,6 +254,12 @@ export class IcoInstructionsPartComponent
       this.assIdTagEntries.set(thesauri[key].entries);
     } else {
       this.assIdTagEntries.set(undefined);
+    }
+    key = 'asserted-id-features';
+    if (this.hasThesaurus(key)) {
+      this.assIdFeatureEntries.set(thesauri[key].entries);
+    } else {
+      this.assIdFeatureEntries.set(undefined);
     }
   }
 
