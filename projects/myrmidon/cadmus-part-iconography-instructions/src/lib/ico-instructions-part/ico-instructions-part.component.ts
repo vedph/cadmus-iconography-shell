@@ -30,6 +30,7 @@ import {
   ThesaurusEntry,
 } from '@myrmidon/cadmus-core';
 import { DialogService } from '@myrmidon/ngx-mat-tools';
+import { LookupProviderOptions } from '@myrmidon/cadmus-refs-lookup';
 
 import {
   ICO_INSTRUCTIONS_PART_TYPEID,
@@ -37,6 +38,10 @@ import {
   IcoInstructionsPart,
 } from '../ico-instructions-part';
 import { IcoInstructionEditorComponent } from '../ico-instruction-editor/ico-instruction-editor.component';
+
+interface IcoInstructionsPartSettings {
+  lookupProviderOptions?: LookupProviderOptions;
+}
 
 /**
  * Iconographic instructions part editor component.
@@ -77,73 +82,80 @@ export class IcoInstructionsPartComponent
 
   // ico-instruction-types
   public readonly instrTypeEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // ico-instruction-type-tags
   public readonly instrTypeTagEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // ico-instruction-subjects
   public readonly instrSubjectEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // ico-instruction-scripts
   public readonly instrScriptEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // ico-instruction-diff-types
   public readonly instrDiffTypeEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // ico-instruction-positions
   public readonly instrPositionEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // ico-instruction-feats
   public readonly instrFeatEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // ico-instruction-languages
   public readonly instrLangEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // ico-instruction-tools
   public readonly instrToolEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // ico-instruction-colors
   public readonly instrColorEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // assertion-tags
   public readonly assTagEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // doc-reference-types
   public readonly docRefTypeEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // doc-reference-tags
   public readonly docRefTagEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // asserted-id-scopes
   public readonly assIdScopeEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // asserted-id-tags
   public readonly assIdTagEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined
+    undefined,
   );
   // asserted-id-features
-  public readonly assIdFeatureEntries = signal<ThesaurusEntry[] | undefined>(undefined);
+  public readonly assIdFeatureEntries = signal<ThesaurusEntry[] | undefined>(
+    undefined,
+  );
+
+  // lookup options depending on role
+  public readonly lookupProviderOptions = signal<
+    LookupProviderOptions | undefined
+  >(undefined);
 
   public instructions: FormControl<IcoInstruction[]>;
 
   constructor(
     authService: AuthJwtService,
     formBuilder: FormBuilder,
-    private _dialogService: DialogService
+    private _dialogService: DialogService,
   ) {
     super(authService, formBuilder);
     // form
@@ -277,14 +289,23 @@ export class IcoInstructionsPartComponent
     if (data?.thesauri) {
       this.updateThesauri(data.thesauri);
     }
-
+    // settings
+    this._appRepository
+      ?.getSettingFor<IcoInstructionsPartSettings>(
+        ICO_INSTRUCTIONS_PART_TYPEID,
+        this.identity()?.roleId || undefined,
+      )
+      .then((settings) => {
+        const options = settings?.lookupProviderOptions;
+        this.lookupProviderOptions.set(options || undefined);
+      });
     // form
     this.updateForm(data?.value);
   }
 
   protected getValue(): IcoInstructionsPart {
     let part = this.getEditedPart(
-      ICO_INSTRUCTIONS_PART_TYPEID
+      ICO_INSTRUCTIONS_PART_TYPEID,
     ) as IcoInstructionsPart;
     part.instructions = this.instructions.value || [];
     return part;

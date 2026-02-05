@@ -20,112 +20,125 @@
         </button>
       </div>
       @if (instructions.value.length) {
-      <table>
-        <thead>
-          <tr>
-            <th></th>
-            <th>type(s)</th>
-            <th>range</th>
-            <th>position</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (instruction of instructions.value; track instruction; let i =
-          $index; let first = $first; let last = $last) {
-          <tr [class.selected]="i === editedIndex()">
-            <td class="fit-width">
-              <button
-                type="button"
-                mat-icon-button
-                color="primary"
-                matTooltip="Edit this instruction"
-                (click)="editInstruction(instruction, i)"
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>type(s)</th>
+              <th>range</th>
+              <th>position</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (
+              instruction of instructions.value;
+              track instruction;
+              let i = $index;
+              let first = $first;
+              let last = $last
+            ) {
+              <tr [class.selected]="i === editedIndex()">
+                <td class="fit-width">
+                  <button
+                    type="button"
+                    mat-icon-button
+                    color="primary"
+                    matTooltip="Edit this instruction"
+                    (click)="editInstruction(instruction, i)"
+                  >
+                    <mat-icon class="mat-primary">edit</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    mat-icon-button
+                    matTooltip="Move this instruction up"
+                    [disabled]="first"
+                    (click)="moveInstructionUp(i)"
+                  >
+                    <mat-icon>arrow_upward</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    mat-icon-button
+                    matTooltip="Move this instruction down"
+                    [disabled]="last"
+                    (click)="moveInstructionDown(i)"
+                  >
+                    <mat-icon>arrow_downward</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    mat-icon-button
+                    color="warn"
+                    matTooltip="Delete this instruction"
+                    (click)="deleteInstruction(i)"
+                  >
+                    <mat-icon class="mat-warn">remove_circle</mat-icon>
+                  </button>
+                </td>
+                <td>
+                  @for (type of instruction.types; track type) {
+                    <span class="type"
+                      >{{
+                        type.value
+                          | flatLookup: instrTypeEntries() : "id" : "value"
+                      }}
+                      @if (type.tag) {
+                        ({{
+                          type.tag
+                            | flatLookup
+                              : instrTypeTagEntries()
+                              : "id"
+                              : "value"
+                        }})
+                      }
+                    </span>
+                  }
+                </td>
+                <td>{{ instruction.location }}</td>
+                <td>
+                  {{
+                    instruction.position
+                      | flatLookup: instrPositionEntries() : "id" : "value"
+                  }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+      @if (edited()) {
+        <fieldset>
+          <mat-expansion-panel [expanded]="edited()" [disabled]="!edited()">
+            <mat-expansion-panel-header>
+              <mat-panel-title
+                >instruction #{{ editedIndex() + 1 }}</mat-panel-title
               >
-                <mat-icon class="mat-primary">edit</mat-icon>
-              </button>
-              <button
-                type="button"
-                mat-icon-button
-                matTooltip="Move this instruction up"
-                [disabled]="first"
-                (click)="moveInstructionUp(i)"
-              >
-                <mat-icon>arrow_upward</mat-icon>
-              </button>
-              <button
-                type="button"
-                mat-icon-button
-                matTooltip="Move this instruction down"
-                [disabled]="last"
-                (click)="moveInstructionDown(i)"
-              >
-                <mat-icon>arrow_downward</mat-icon>
-              </button>
-              <button
-                type="button"
-                mat-icon-button
-                color="warn"
-                matTooltip="Delete this instruction"
-                (click)="deleteInstruction(i)"
-              >
-                <mat-icon class="mat-warn">remove_circle</mat-icon>
-              </button>
-            </td>
-            <td>
-              @for (type of instruction.types; track type) {
-              <span class="type"
-                >{{
-                  type.value | flatLookup : instrTypeEntries() : "id" : "value"
-                }}
-                @if (type.tag) { ({{
-                  type.tag
-                    | flatLookup : instrTypeTagEntries() : "id" : "value"
-                }}) }
-              </span>
-              }
-            </td>
-            <td>{{ instruction.location }}</td>
-            <td>
-              {{
-                instruction.position
-                  | flatLookup : instrPositionEntries() : "id" : "value"
-              }}
-            </td>
-          </tr>
-          }
-        </tbody>
-      </table>
-      } @if (edited()) {
-      <fieldset>
-        <mat-expansion-panel [expanded]="edited()" [disabled]="!edited()">
-          <mat-expansion-panel-header>
-            <mat-panel-title
-              >instruction #{{ editedIndex() + 1 }}</mat-panel-title
-            >
-          </mat-expansion-panel-header>
-          <cadmus-ico-instructions-editor
-            [instrTypeTagEntries]="instrTypeTagEntries()"
-            [instrTypeEntries]="instrTypeEntries()"
-            [instrSubjectEntries]="instrSubjectEntries()"
-            [instrScriptEntries]="instrScriptEntries()"
-            [instrPositionEntries]="instrPositionEntries()"
-            [instrDiffTypeEntries]="instrDiffTypeEntries()"
-            [instrFeatEntries]="instrFeatEntries()"
-            [instrLanguageEntries]="instrLangEntries()"
-            [instrToolEntries]="instrToolEntries()"
-            [instrColorEntries]="instrColorEntries()"
-            [assTagEntries]="assTagEntries()"
-            [docRefTypeEntries]="docRefTypeEntries()"
-            [docRefTagEntries]="docRefTagEntries()"
-            [assIdScopeEntries]="assIdScopeEntries()"
-            [assIdTagEntries]="assIdTagEntries()"
-            [idFeatureEntries]="assIdFeatureEntries()"
-            [instruction]="edited()"
-            (instructionChange)="saveInstruction($event!)"
-            (cancelEdit)="closeInstruction()"
-          />
-        </mat-expansion-panel>
-      </fieldset>
+            </mat-expansion-panel-header>
+            <cadmus-ico-instructions-editor
+              [instrTypeTagEntries]="instrTypeTagEntries()"
+              [instrTypeEntries]="instrTypeEntries()"
+              [instrSubjectEntries]="instrSubjectEntries()"
+              [instrScriptEntries]="instrScriptEntries()"
+              [instrPositionEntries]="instrPositionEntries()"
+              [instrDiffTypeEntries]="instrDiffTypeEntries()"
+              [instrFeatEntries]="instrFeatEntries()"
+              [instrLanguageEntries]="instrLangEntries()"
+              [instrToolEntries]="instrToolEntries()"
+              [instrColorEntries]="instrColorEntries()"
+              [assTagEntries]="assTagEntries()"
+              [docRefTypeEntries]="docRefTypeEntries()"
+              [docRefTagEntries]="docRefTagEntries()"
+              [assIdScopeEntries]="assIdScopeEntries()"
+              [assIdTagEntries]="assIdTagEntries()"
+              [idFeatureEntries]="assIdFeatureEntries()"
+              [lookupProviderOptions]="lookupProviderOptions()"
+              [instruction]="edited()"
+              (instructionChange)="saveInstruction($event!)"
+              (cancelEdit)="closeInstruction()"
+            />
+          </mat-expansion-panel>
+        </fieldset>
       }
     </mat-card-content>
     <mat-card-actions>

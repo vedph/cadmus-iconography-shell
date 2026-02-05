@@ -43,6 +43,7 @@ import {
   ThesaurusTreeComponent,
 } from '@myrmidon/cadmus-thesaurus-store';
 import { Flag, FlagSetComponent } from '@myrmidon/cadmus-ui-flag-set';
+import { LookupProviderOptions } from '@myrmidon/cadmus-refs-lookup';
 
 import {
   IcoColorReuse,
@@ -123,22 +124,26 @@ export class IcoInstructionEditorComponent {
   // asserted-id-features
   public readonly idFeatureEntries = input<ThesaurusEntry[] | undefined>();
 
+  public readonly lookupProviderOptions = input<
+    LookupProviderOptions | undefined
+  >();
+
   // flags mapped from thesaurus entries
   public languageFlags = computed<Flag[]>(
-    () => this.instrLanguageEntries()?.map((e) => entryToFlag(e)) || []
+    () => this.instrLanguageEntries()?.map((e) => entryToFlag(e)) || [],
   );
   public featureFlags = computed<Flag[]>(
-    () => this.instrFeatEntries()?.map((e) => entryToFlag(e)) || []
+    () => this.instrFeatEntries()?.map((e) => entryToFlag(e)) || [],
   );
   public toolFlags = computed<Flag[]>(
-    () => this.instrToolEntries()?.map((e) => entryToFlag(e)) || []
+    () => this.instrToolEntries()?.map((e) => entryToFlag(e)) || [],
   );
   public colorFlags = computed<Flag[]>(
-    () => this.instrColorEntries()?.map((e) => entryToFlag(e)) || []
+    () => this.instrColorEntries()?.map((e) => entryToFlag(e)) || [],
   );
 
   public readonly editedDiff = signal<IcoInstructionDiff | undefined>(
-    undefined
+    undefined,
   );
   public readonly editedDiffIndex = signal<number>(-1);
 
@@ -177,7 +182,10 @@ export class IcoInstructionEditorComponent {
   public assertion: FormControl<Assertion | null>;
   public form: FormGroup;
 
-  constructor(formBuilder: FormBuilder, private _dialogService: DialogService) {
+  constructor(
+    formBuilder: FormBuilder,
+    private _dialogService: DialogService,
+  ) {
     // type form
     this.type = new FormControl('', {
       nonNullable: true,
@@ -200,7 +208,7 @@ export class IcoInstructionEditorComponent {
     });
     this.subject = new FormControl<string | null>(
       null,
-      Validators.maxLength(500)
+      Validators.maxLength(500),
     );
     this.script = new FormControl<string | null>(null, {
       nonNullable: true,
@@ -208,12 +216,12 @@ export class IcoInstructionEditorComponent {
     });
     this.text = new FormControl<string | null>(
       null,
-      Validators.maxLength(5000)
+      Validators.maxLength(5000),
     );
     this.sequences = new FormControl<string | null>(null);
     this.repertoire = new FormControl<string | null>(
       null,
-      Validators.maxLength(100)
+      Validators.maxLength(100),
     );
     this.location = new FormControl<string>('', {
       nonNullable: true,
@@ -225,26 +233,26 @@ export class IcoInstructionEditorComponent {
     });
     this.positionNote = new FormControl<string | null>(
       null,
-      Validators.maxLength(1000)
+      Validators.maxLength(1000),
     );
     this.targetLocation = new FormControl<string | null>(
       null,
-      Validators.maxLength(100)
+      Validators.maxLength(100),
     );
     this.implementation = new FormControl<string | null>(
       null,
-      Validators.maxLength(5000)
+      Validators.maxLength(5000),
     );
     this.differences = new FormControl<IcoInstructionDiff[]>([], {
       nonNullable: true,
     });
     this.note = new FormControl<string | null>(
       null,
-      Validators.maxLength(5000)
+      Validators.maxLength(5000),
     );
     this.description = new FormControl<string | null>(
       null,
-      Validators.maxLength(5000)
+      Validators.maxLength(5000),
     );
     this.features = new FormControl<string[]>([], { nonNullable: true });
     this.languages = new FormControl<string[]>([], { nonNullable: true });
@@ -305,7 +313,7 @@ export class IcoInstructionEditorComponent {
       this.text.setValue(instruction.text || null);
       // sequences are in a string with space separator
       this.sequences.setValue(
-        instruction.sequences?.length ? instruction.sequences.join(' ') : null
+        instruction.sequences?.length ? instruction.sequences.join(' ') : null,
       );
       this.repertoire.setValue(instruction.repertoire || null);
       this.location.setValue(instruction.location || '');
