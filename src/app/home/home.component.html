@@ -8,8 +8,8 @@
         <img src="img/cadmus-300.png" alt="Iconography" />
       </div>
     </div>
-    @if (!logged) {
-    <div id="login">Please <a routerLink="/login">login</a> to start.</div>
+    @if (!logged()) {
+      <div id="login">Please <a routerLink="/login">login</a> to start.</div>
     }
   </mat-card-content>
 </mat-card>

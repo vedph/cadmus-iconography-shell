@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, ActivatedRoute } from '@angular/router';
 
@@ -10,6 +10,7 @@ import { IcoInstructionsPartComponent } from '../ico-instructions-part/ico-instr
 
 @Component({
   selector: 'cadmus-ico-instructions-part-feature',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IcoInstructionsPartComponent, CurrentItemBarComponent],
   templateUrl: './ico-instructions-part-feature.component.html',
   styleUrl: './ico-instructions-part-feature.component.css',

@@ -1,4 +1,9 @@
-import { Component, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  signal,
+} from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -54,6 +59,7 @@ interface IcoInstructionsPartSettings {
  */
 @Component({
   selector: 'cadmus-ico-instructions-part',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     ReactiveFormsModule,

@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -63,6 +64,7 @@ function entryToFlag(entry: ThesaurusEntry): Flag {
 
 @Component({
   selector: 'cadmus-ico-instructions-editor',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule,
     MatButtonModule,
@@ -572,6 +574,12 @@ export class IcoInstructionEditorComponent {
     this.date.setValue(date);
     this.date.markAsDirty();
     this.date.updateValueAndValidity();
+  }
+
+  public onLinksChange(ids: AssertedCompositeId[]): void {
+    this.links.setValue(ids);
+    this.links.markAsDirty();
+    this.links.updateValueAndValidity();
   }
 
   public onAssertionChange(assertion: Assertion | null): void {

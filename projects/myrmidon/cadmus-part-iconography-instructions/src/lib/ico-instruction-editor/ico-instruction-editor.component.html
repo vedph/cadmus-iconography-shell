@@ -508,10 +508,7 @@
         }
         @if (editedDiff()) {
           <fieldset>
-            <mat-expansion-panel
-              [expanded]="editedDiff()"
-              [disabled]="!editedDiff()"
-            >
+            <mat-expansion-panel [expanded]="true">
               <mat-expansion-panel-header>
                 <mat-panel-title>Diff #</mat-panel-title>
               </mat-expansion-panel-header>
@@ -666,10 +663,7 @@
       }
       @if (editedReuse()) {
         <fieldset>
-          <mat-expansion-panel
-            [expanded]="editedReuse()"
-            [disabled]="!editedReuse()"
-          >
+          <mat-expansion-panel [expanded]="true">
             <mat-expansion-panel-header>
               <mat-panel-title>Color reuse #</mat-panel-title>
             </mat-expansion-panel-header>
@@ -697,6 +691,7 @@
         [ids]="links.value"
         [canSwitchMode]="true"
         [canEditTarget]="true"
+        (idsChange)="onLinksChange($event)"
       />
     </mat-tab>
   </mat-tab-group>
