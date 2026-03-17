@@ -6,8 +6,10 @@ import {
   input,
   model,
   output,
+  Signal,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   FormBuilder,
   FormControl,
@@ -152,6 +154,12 @@ export class IcoInstructionEditorComponent {
   public readonly editedReuse = signal<IcoColorReuse | undefined>(undefined);
   public readonly editedReuseIndex = signal<number>(-1);
 
+  // reactive view of form control values for zoneless CD
+  public readonly typesList: Signal<TaggedString[]>;
+  public readonly differencesList: Signal<IcoInstructionDiff[]>;
+  public readonly colorReusesList: Signal<IcoColorReuse[]>;
+  public readonly hasDateValue: Signal<boolean>;
+
   // type form
   public type: FormControl<string>;
   public typeTag: FormControl<string | null>;
@@ -295,6 +303,20 @@ export class IcoInstructionEditorComponent {
       hasDate: this.hasDate,
       date: this.date,
       assertion: this.assertion,
+    });
+
+    // reactive signal wrappers for form controls used in template @if/@for
+    this.typesList = toSignal(this.types.valueChanges, {
+      initialValue: [] as TaggedString[],
+    });
+    this.differencesList = toSignal(this.differences.valueChanges, {
+      initialValue: [] as IcoInstructionDiff[],
+    });
+    this.colorReusesList = toSignal(this.colorReuses.valueChanges, {
+      initialValue: [] as IcoColorReuse[],
+    });
+    this.hasDateValue = toSignal(this.hasDate.valueChanges, {
+      initialValue: false,
     });
 
     // when model changes, update form

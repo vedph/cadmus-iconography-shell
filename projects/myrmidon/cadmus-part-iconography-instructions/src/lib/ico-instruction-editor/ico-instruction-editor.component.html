@@ -107,7 +107,7 @@
           </form>
 
           <!-- types list -->
-          @if (types.value.length) {
+          @if (typesList().length) {
             <table>
               <thead>
                 <tr>
@@ -118,7 +118,7 @@
               </thead>
               <tbody>
                 @for (
-                  entry of types.value;
+                  entry of typesList();
                   track entry;
                   let i = $index;
                   let first = $first;
@@ -375,7 +375,7 @@
           <legend>date</legend>
           <!-- date-->
           <mat-checkbox [formControl]="hasDate">date</mat-checkbox>
-          @if (hasDate.value) {
+          @if (hasDateValue()) {
             <cadmus-refs-historical-date
               [date]="date.value || undefined"
               (dateChange)="onDateChange($event!)"
@@ -438,7 +438,7 @@
             <mat-icon>add_circle</mat-icon> diff
           </button>
         </div>
-        @if (differences.value.length) {
+        @if (differencesList().length) {
           <table>
             <thead>
               <tr>
@@ -449,7 +449,7 @@
             </thead>
             <tbody>
               @for (
-                entry of differences.value;
+                entry of differencesList();
                 track entry;
                 let i = $index;
                 let first = $first;
@@ -593,7 +593,7 @@
           <mat-icon>add_circle</mat-icon> color reuse
         </button>
       </div>
-      @if (colorReuses.value.length) {
+      @if (colorReusesList().length) {
         <table>
           <thead>
             <tr>
@@ -604,7 +604,7 @@
           </thead>
           <tbody>
             @for (
-              entry of colorReuses.value;
+              entry of colorReusesList();
               track entry;
               let i = $index;
               let first = $first;

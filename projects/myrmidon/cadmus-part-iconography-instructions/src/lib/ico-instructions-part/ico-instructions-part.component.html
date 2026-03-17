@@ -19,7 +19,7 @@
           <mat-icon>add_circle</mat-icon> Instruction
         </button>
       </div>
-      @if (instructions.value.length) {
+      @if (instructionsList().length) {
         <table>
           <thead>
             <tr>
@@ -31,7 +31,7 @@
           </thead>
           <tbody>
             @for (
-              instruction of instructions.value;
+              instruction of instructionsList();
               track instruction;
               let i = $index;
               let first = $first;

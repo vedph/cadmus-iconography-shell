@@ -2,8 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
+  Signal,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   FormBuilder,
   FormControl,
@@ -85,6 +87,8 @@ export class IcoInstructionsPartComponent
 {
   public readonly editedIndex = signal<number>(-1);
   public readonly edited = signal<IcoInstruction | undefined>(undefined);
+  // reactive view of instructions form control value for zoneless CD
+  public readonly instructionsList: Signal<IcoInstruction[]>;
 
   // ico-instruction-types
   public readonly instrTypeEntries = signal<ThesaurusEntry[] | undefined>(
@@ -169,6 +173,9 @@ export class IcoInstructionsPartComponent
       // at least 1 entry
       validators: NgxToolsValidators.strictMinLengthValidator(1),
       nonNullable: true,
+    });
+    this.instructionsList = toSignal(this.instructions.valueChanges, {
+      initialValue: [] as IcoInstruction[],
     });
   }
 
