@@ -1,20 +1,26 @@
 import {
   ApplicationConfig,
-  importProvidersFrom,
   provideZonelessChangeDetection,
 } from '@angular/core';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withInterceptors,
+  withXhr,
+} from '@angular/common/http';
 import { provideRouter, withViewTransitions } from '@angular/router';
 
 import { provideNativeDateAdapter } from '@angular/material/core';
 
-import { NgeMonacoModule } from '@cisstech/nge/monaco';
-import { NgeMarkdownModule } from '@cisstech/nge/markdown';
+import {
+  DefaultMonacoLoader,
+  NGX_MONACO_LOADER_PROVIDER,
+} from '@jean-merelis/ngx-monaco-editor';
 
 import { jwtInterceptor } from '@myrmidon/auth-jwt-login';
 import {
   CADMUS_TEXT_ED_BINDINGS_TOKEN,
   CADMUS_TEXT_ED_SERVICE_OPTIONS_TOKEN,
+  CadmusTextEdService,
 } from '@myrmidon/cadmus-text-ed';
 import {
   MdBoldCtePlugin,
@@ -34,10 +40,12 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZonelessChangeDetection(),
     provideRouter(routes, withViewTransitions()),
-    provideHttpClient(withInterceptors([jwtInterceptor])),
+    provideHttpClient(withXhr(), withInterceptors([jwtInterceptor])),
     provideNativeDateAdapter(),
-    importProvidersFrom(NgeMonacoModule.forRoot({})),
-    importProvidersFrom(NgeMarkdownModule),
+    {
+      provide: NGX_MONACO_LOADER_PROVIDER,
+      useFactory: () => new DefaultMonacoLoader({ paths: { vs: '/vs' } }),
+    },
     // parts and fragments type IDs to editor group keys mappings
     // https://github.com/nrwl/nx/issues/208#issuecomment-384102058
     // inject like: @Inject('partEditorKeys') partEditorKeys: PartEditorKeys
@@ -57,6 +65,7 @@ export const appConfig: ApplicationConfig = {
       useValue: ITEM_BROWSER_KEYS,
     },
     // text editing plugins
+    CadmusTextEdService,
     MdBoldCtePlugin,
     MdItalicCtePlugin,
     TxtEmojiCtePlugin,

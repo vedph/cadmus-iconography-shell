@@ -4,6 +4,10 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## History
 
+### 1.0.0
+
+- 2026-03-13: ⚠️ migrated to Angular 22 and new [Monaco wrapper](https://vedph.github.io/cadmus-doc/history/20260613-monaco.html).
+
 ### 0.1.2
 
 - 2026-03-18: migrated shell app to M3 themes and added dark theme support to components.
