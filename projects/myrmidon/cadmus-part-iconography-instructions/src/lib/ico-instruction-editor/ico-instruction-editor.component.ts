@@ -3,20 +3,21 @@ import {
   Component,
   computed,
   effect,
+  inject,
   input,
+  linkedSignal,
   model,
   output,
-  Signal,
   signal,
+  untracked,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+  FieldTree,
+  form,
+  FormField,
+  maxLength,
+  required,
+} from '@angular/forms/signals';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -28,7 +29,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { FlatLookupPipe } from '@myrmidon/ngx-tools';
+import { FlatLookupPipe, NgxToolsSignalValidators } from '@myrmidon/ngx-tools';
 import { DialogService } from '@myrmidon/ngx-mat-tools';
 import { Assertion, AssertionComponent } from '@myrmidon/cadmus-refs-assertion';
 import {
@@ -41,6 +42,11 @@ import {
 } from '@myrmidon/cadmus-refs-historical-date';
 
 import { ThesaurusEntry } from '@myrmidon/cadmus-core';
+import {
+  copyFormValue,
+  isImplicitSubmission,
+  setFieldFromChild,
+} from '@myrmidon/cadmus-ui';
 import {
   renderLabelFromLastColon,
   ThesaurusTreeComponent,
@@ -75,11 +81,122 @@ function swapIndex(index: number, a: number, b: number): number {
   return index === b ? a : index;
 }
 
+/**
+ * Get a copy of items where the item at index has been moved to newIndex.
+ */
+function moveItem<T>(items: T[], index: number, newIndex: number): T[] {
+  const moved = [...items];
+  moved.splice(newIndex, 0, ...moved.splice(index, 1));
+  return moved;
+}
+
+/**
+ * The editable shape behind the instruction form.
+ */
+interface IcoInstructionControls {
+  eid: string;
+  types: TaggedString[];
+  subject: string;
+  script: string;
+  text: string;
+  // space-delimited
+  sequences: string;
+  repertoire: string;
+  location: string;
+  position: string;
+  positionNote: string;
+  targetLocation: string;
+  implementation: string;
+  differences: IcoInstructionDiff[];
+  note: string;
+  description: string;
+  features: string[];
+  languages: string[];
+  tools: string[];
+  colors: string[];
+  colorReuses: IcoColorReuse[];
+  links: AssertedCompositeId[];
+  hasDate: boolean;
+  date: HistoricalDateModel | null;
+  assertion: Assertion | null;
+}
+
+/**
+ * The editable shape behind the new type form.
+ */
+interface NewTypeControls {
+  type: string;
+  tag: string;
+}
+
+function toDraft(instruction?: IcoInstruction | null): IcoInstructionControls {
+  return {
+    eid: instruction?.eid || '',
+    types: copyFormValue(instruction?.types || []),
+    subject: instruction?.subject || '',
+    script: instruction?.script || '',
+    text: instruction?.text || '',
+    sequences: instruction?.sequences?.join(' ') || '',
+    repertoire: instruction?.repertoire || '',
+    location: instruction?.location || '',
+    position: instruction?.position || '',
+    positionNote: instruction?.positionNote || '',
+    targetLocation: instruction?.targetLocation || '',
+    implementation: instruction?.implementation || '',
+    differences: copyFormValue(instruction?.differences || []),
+    note: instruction?.note || '',
+    description: instruction?.description || '',
+    features: [...(instruction?.features || [])],
+    languages: [...(instruction?.languages || [])],
+    tools: [...(instruction?.tools || [])],
+    colors: [...(instruction?.colors || [])],
+    colorReuses: copyFormValue(instruction?.colorReuses || []),
+    links: copyFormValue(instruction?.links || []),
+    hasDate: !!instruction?.date,
+    date: copyFormValue(instruction?.date) || null,
+    assertion: copyFormValue(instruction?.assertion) || null,
+  };
+}
+
+function toInstruction(draft: IcoInstructionControls): IcoInstruction {
+  // sequences are space-delimited: split on any whitespace run
+  const sequences = draft.sequences.split(/\s+/).filter((s) => s.length);
+  // arrays are copied, as the form tags their objects
+  const items = <T>(array: T[]): T[] | undefined =>
+    array.length ? copyFormValue(array) : undefined;
+
+  return {
+    eid: draft.eid.trim() || undefined,
+    types: copyFormValue(draft.types),
+    subject: draft.subject.trim() || undefined,
+    script: draft.script.trim(),
+    text: draft.text.trim() || undefined,
+    sequences: sequences.length ? sequences : undefined,
+    repertoire: draft.repertoire.trim() || undefined,
+    location: draft.location.trim(),
+    position: draft.position.trim(),
+    positionNote: draft.positionNote.trim() || undefined,
+    targetLocation: draft.targetLocation.trim() || undefined,
+    implementation: draft.implementation.trim() || undefined,
+    differences: items(draft.differences),
+    note: draft.note.trim() || undefined,
+    description: draft.description.trim() || undefined,
+    features: items(draft.features),
+    languages: items(draft.languages),
+    tools: items(draft.tools),
+    colors: items(draft.colors),
+    colorReuses: items(draft.colorReuses),
+    links: items(draft.links),
+    date: draft.hasDate && draft.date ? copyFormValue(draft.date) : undefined,
+    assertion: copyFormValue(draft.assertion) || undefined,
+  };
+}
+
 @Component({
   selector: 'cadmus-ico-instructions-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatButtonModule,
     MatCheckboxModule,
     MatExpansionModule,
@@ -102,6 +219,8 @@ function swapIndex(index: number, a: number, b: number): number {
   styleUrl: './ico-instruction-editor.component.css',
 })
 export class IcoInstructionEditorComponent {
+  private readonly _dialogService = inject(DialogService);
+
   public readonly instruction = model<IcoInstruction | undefined>();
 
   public readonly cancelEdit = output();
@@ -165,262 +284,129 @@ export class IcoInstructionEditorComponent {
   public readonly editedReuse = signal<IcoColorReuse | undefined>(undefined);
   public readonly editedReuseIndex = signal<number>(-1);
 
-  // reactive view of form control values for zoneless CD
-  public readonly typesList: Signal<TaggedString[]>;
-  public readonly differencesList: Signal<IcoInstructionDiff[]>;
-  public readonly colorReusesList: Signal<IcoColorReuse[]>;
-  public readonly hasDateValue: Signal<boolean>;
+  // new type form
+  private readonly _newType = signal<NewTypeControls>({ type: '', tag: '' });
+  public readonly typeForm = form(this._newType, (p) => {
+    required(p.type);
+    maxLength(p.type, 100);
+    maxLength(p.tag, 100);
+  });
 
-  // type form
-  public type: FormControl<string>;
-  public typeTag: FormControl<string | null>;
-  public typeForm: FormGroup;
+  // the draft is rebuilt from a new instruction, but kept on the echo
+  // of our save
+  private readonly _draft = linkedSignal<
+    IcoInstruction | undefined,
+    IcoInstructionControls
+  >({
+    source: () => this.instruction(),
+    computation: (instruction, previous) =>
+      previous &&
+      JSON.stringify(instruction) ===
+        JSON.stringify(toInstruction(previous.value))
+        ? previous.value
+        : toDraft(instruction),
+  });
 
-  // form
-  public eid: FormControl<string | null>;
-  public types: FormControl<TaggedString[]>;
-  public subject: FormControl<string | null>;
-  public script: FormControl<string | null>;
-  public text: FormControl<string | null>;
-  public sequences: FormControl<string | null>;
-  public repertoire: FormControl<string | null>;
-  public location: FormControl<string>;
-  public position: FormControl<string>;
-  public positionNote: FormControl<string | null>;
-  public targetLocation: FormControl<string | null>;
-  public implementation: FormControl<string | null>;
-  public differences: FormControl<IcoInstructionDiff[]>;
-  public note: FormControl<string | null>;
-  public description: FormControl<string | null>;
-  public features: FormControl<string[]>;
-  public languages: FormControl<string[]>;
-  public tools: FormControl<string[]>;
-  public colors: FormControl<string[]>;
-  public colorReuses: FormControl<IcoColorReuse[]>;
-  public links: FormControl<AssertedCompositeId[]>;
-  public hasDate: FormControl<boolean>;
-  public date: FormControl<HistoricalDateModel | null>;
-  public assertion: FormControl<Assertion | null>;
-  public form: FormGroup;
+  public readonly form = form(this._draft, (p) => {
+    maxLength(p.eid, 100);
+    NgxToolsSignalValidators.strictMinLength(p.types, 1);
+    maxLength(p.subject, 500);
+    required(p.script);
+    maxLength(p.text, 5000);
+    maxLength(p.repertoire, 100);
+    maxLength(p.location, 100);
+    required(p.position);
+    maxLength(p.position, 100);
+    maxLength(p.positionNote, 1000);
+    maxLength(p.targetLocation, 100);
+    maxLength(p.implementation, 5000);
+    maxLength(p.note, 5000);
+    maxLength(p.description, 5000);
+  });
 
-  constructor(
-    formBuilder: FormBuilder,
-    private _dialogService: DialogService,
-  ) {
-    // type form
-    this.type = new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(100)],
-    });
-    this.typeTag = new FormControl<string | null>(null, {
-      nonNullable: false,
-      validators: Validators.maxLength(100),
-    });
-    this.typeForm = formBuilder.group({
-      type: this.type,
-      typeTag: this.typeTag,
-    });
-
-    // form
-    this.eid = new FormControl<string | null>(null, Validators.maxLength(100));
-    this.types = new FormControl<TaggedString[]>([], {
-      nonNullable: true,
-      validators: Validators.required,
-    });
-    this.subject = new FormControl<string | null>(
-      null,
-      Validators.maxLength(500),
-    );
-    this.script = new FormControl<string | null>(null, {
-      nonNullable: true,
-      validators: Validators.required,
-    });
-    this.text = new FormControl<string | null>(
-      null,
-      Validators.maxLength(5000),
-    );
-    this.sequences = new FormControl<string | null>(null);
-    this.repertoire = new FormControl<string | null>(
-      null,
-      Validators.maxLength(100),
-    );
-    this.location = new FormControl<string>('', {
-      nonNullable: true,
-      validators: Validators.maxLength(100),
-    });
-    this.position = new FormControl<string>('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(100)],
-    });
-    this.positionNote = new FormControl<string | null>(
-      null,
-      Validators.maxLength(1000),
-    );
-    this.targetLocation = new FormControl<string | null>(
-      null,
-      Validators.maxLength(100),
-    );
-    this.implementation = new FormControl<string | null>(
-      null,
-      Validators.maxLength(5000),
-    );
-    this.differences = new FormControl<IcoInstructionDiff[]>([], {
-      nonNullable: true,
-    });
-    this.note = new FormControl<string | null>(
-      null,
-      Validators.maxLength(5000),
-    );
-    this.description = new FormControl<string | null>(
-      null,
-      Validators.maxLength(5000),
-    );
-    this.features = new FormControl<string[]>([], { nonNullable: true });
-    this.languages = new FormControl<string[]>([], { nonNullable: true });
-    this.tools = new FormControl<string[]>([], { nonNullable: true });
-    this.colors = new FormControl<string[]>([], { nonNullable: true });
-    this.colorReuses = new FormControl<IcoColorReuse[]>([], {
-      nonNullable: true,
-    });
-    this.links = new FormControl<AssertedCompositeId[]>([], {
-      nonNullable: true,
-    });
-    this.hasDate = new FormControl<boolean>(false, { nonNullable: true });
-    this.date = new FormControl<HistoricalDateModel | null>(null);
-    this.assertion = new FormControl<Assertion | null>(null);
-
-    this.form = formBuilder.group({
-      eid: this.eid,
-      types: this.types,
-      subject: this.subject,
-      script: this.script,
-      text: this.text,
-      sequences: this.sequences,
-      repertoire: this.repertoire,
-      location: this.location,
-      position: this.position,
-      positionNote: this.positionNote,
-      targetLocation: this.targetLocation,
-      implementation: this.implementation,
-      differences: this.differences,
-      note: this.note,
-      description: this.description,
-      features: this.features,
-      languages: this.languages,
-      tools: this.tools,
-      colors: this.colors,
-      colorReuses: this.colorReuses,
-      links: this.links,
-      hasDate: this.hasDate,
-      date: this.date,
-      assertion: this.assertion,
-    });
-
-    // reactive signal wrappers for form controls used in template @if/@for
-    this.typesList = toSignal(this.types.valueChanges, {
-      initialValue: [] as TaggedString[],
-    });
-    this.differencesList = toSignal(this.differences.valueChanges, {
-      initialValue: [] as IcoInstructionDiff[],
-    });
-    this.colorReusesList = toSignal(this.colorReuses.valueChanges, {
-      initialValue: [] as IcoColorReuse[],
-    });
-    this.hasDateValue = toSignal(this.hasDate.valueChanges, {
-      initialValue: false,
-    });
-
-    // when model changes, update form
+  constructor() {
+    // clear the interaction state once the draft mirrors the bound instruction
     effect(() => {
-      const data = this.instruction();
-      this.updateForm(data);
+      const draft = this._draft();
+      untracked(() => {
+        if (this.isDraftInSync(draft)) {
+          this.form().reset();
+        }
+      });
     });
   }
 
-  private updateForm(instruction: IcoInstruction | undefined | null): void {
-    if (!instruction) {
-      this.form.reset();
-    } else {
-      this.eid.setValue(instruction.eid || null);
-      this.types.setValue(instruction.types || []);
-      this.subject.setValue(instruction.subject || null);
-      this.script.setValue(instruction.script || null);
-      this.text.setValue(instruction.text || null);
-      // sequences are in a string with space separator
-      this.sequences.setValue(
-        instruction.sequences?.length ? instruction.sequences.join(' ') : null,
-      );
-      this.repertoire.setValue(instruction.repertoire || null);
-      this.location.setValue(instruction.location || '');
-      this.position.setValue(instruction.position || '');
-      this.positionNote.setValue(instruction.positionNote || null);
-      this.targetLocation.setValue(instruction.targetLocation || null);
-      this.implementation.setValue(instruction.implementation || null);
-      this.differences.setValue(instruction.differences || []);
-      this.note.setValue(instruction.note || null);
-      this.description.setValue(instruction.description || null);
-      this.features.setValue(instruction.features || []);
-      this.languages.setValue(instruction.languages || []);
-      this.tools.setValue(instruction.tools || []);
-      this.colors.setValue(instruction.colors || []);
-      this.colorReuses.setValue(instruction.colorReuses || []);
-      this.links.setValue(instruction.links || []);
-      this.hasDate.setValue(instruction.date ? true : false);
-      this.date.setValue(instruction.date || null);
-      this.assertion.setValue(instruction.assertion || null);
-      this.form.markAsPristine();
-    }
+  private isDraftInSync(draft: IcoInstructionControls): boolean {
+    return (
+      JSON.stringify(draft) === JSON.stringify(toDraft(this.instruction()))
+    );
+  }
+
+  /**
+   * Set the items of a list field, as the effect of a user action.
+   */
+  private setItems<T>(field: FieldTree<T[]>, items: T[]): void {
+    field().value.set(items);
+    field().markAsDirty();
   }
 
   //#region Types
   public addType(): void {
-    if (this.typeForm.invalid) {
-      this.typeForm.markAllAsTouched();
+    if (this.typeForm().invalid()) {
+      this.typeForm().markAsTouched();
       return;
     }
-    const types = [...this.types.value];
-    types.push({
-      value: this.type.value.trim(),
-      tag: this.typeTag.value?.trim() || undefined,
-    });
-    this.types.setValue(types);
-    this.types.markAsDirty();
-    this.types.updateValueAndValidity();
-    this.typeForm.reset();
+    const type = this._newType();
+    this.setItems(this.form.types, [
+      ...this.form.types().value(),
+      {
+        value: type.type.trim(),
+        tag: type.tag.trim() || undefined,
+      },
+    ]);
+    this._newType.set({ type: '', tag: '' });
+    this.typeForm().reset();
+  }
+
+  /**
+   * Enter in a new type input adds the type when it is valid, like the
+   * add button; it never saves the instruction.
+   */
+  public onTypeEnterKey(event: Event): void {
+    if (!isImplicitSubmission(event)) {
+      return;
+    }
+    event.preventDefault();
+    if (!this.typeForm().invalid()) {
+      this.addType();
+    }
   }
 
   public deleteType(index: number): void {
-    const types = [...this.types.value];
-    types.splice(index, 1);
-    this.types.setValue(types);
-    this.types.markAsDirty();
-    this.types.updateValueAndValidity();
+    this.setItems(
+      this.form.types,
+      this.form.types().value().filter((_, i) => i !== index),
+    );
   }
 
   public moveTypeUp(index: number): void {
     if (index < 1) {
       return;
     }
-    const type = this.types.value[index];
-    const types = [...this.types.value];
-    types.splice(index, 1);
-    types.splice(index - 1, 0, type);
-    this.types.setValue(types);
-    this.types.markAsDirty();
-    this.types.updateValueAndValidity();
+    this.setItems(
+      this.form.types,
+      moveItem(this.form.types().value(), index, index - 1),
+    );
   }
 
   public moveTypeDown(index: number): void {
-    if (index + 1 >= this.types.value.length) {
+    if (index + 1 >= this.form.types().value().length) {
       return;
     }
-    const type = this.types.value[index];
-    const types = [...this.types.value];
-    types.splice(index, 1);
-    types.splice(index + 1, 0, type);
-    this.types.setValue(types);
-    this.types.markAsDirty();
-    this.types.updateValueAndValidity();
+    this.setItems(
+      this.form.types,
+      moveItem(this.form.types().value(), index, index + 1),
+    );
   }
   //#endregion
 
@@ -436,7 +422,7 @@ export class IcoInstructionEditorComponent {
 
   public editDiff(entry: IcoInstructionDiff, index: number): void {
     this.editedDiffIndex.set(index);
-    this.editedDiff.set(structuredClone(entry));
+    this.editedDiff.set(copyFormValue(entry));
   }
 
   public closeDiff(): void {
@@ -445,15 +431,13 @@ export class IcoInstructionEditorComponent {
   }
 
   public saveDiff(entry: IcoInstructionDiff): void {
-    const differences = [...this.differences.value];
+    const differences = [...this.form.differences().value()];
     if (this.editedDiffIndex() === -1) {
       differences.push(entry);
     } else {
       differences.splice(this.editedDiffIndex(), 1, entry);
     }
-    this.differences.setValue(differences);
-    this.differences.markAsDirty();
-    this.differences.updateValueAndValidity();
+    this.setItems(this.form.differences, differences);
     this.closeDiff();
   }
 
@@ -468,11 +452,10 @@ export class IcoInstructionEditorComponent {
             // keep tracking the edited diff, which shifted up
             this.editedDiffIndex.update((i) => i - 1);
           }
-          const differences = [...this.differences.value];
-          differences.splice(index, 1);
-          this.differences.setValue(differences);
-          this.differences.markAsDirty();
-          this.differences.updateValueAndValidity();
+          this.setItems(
+            this.form.differences,
+            this.form.differences().value().filter((_, i) => i !== index),
+          );
         }
       });
   }
@@ -481,32 +464,26 @@ export class IcoInstructionEditorComponent {
     if (index < 1) {
       return;
     }
-    const difference = this.differences.value[index];
-    const differences = [...this.differences.value];
-    differences.splice(index, 1);
-    differences.splice(index - 1, 0, difference);
     this.editedDiffIndex.set(
       swapIndex(this.editedDiffIndex(), index, index - 1),
     );
-    this.differences.setValue(differences);
-    this.differences.markAsDirty();
-    this.differences.updateValueAndValidity();
+    this.setItems(
+      this.form.differences,
+      moveItem(this.form.differences().value(), index, index - 1),
+    );
   }
 
   public moveDiffDown(index: number): void {
-    if (index + 1 >= this.differences.value.length) {
+    if (index + 1 >= this.form.differences().value().length) {
       return;
     }
-    const difference = this.differences.value[index];
-    const differences = [...this.differences.value];
-    differences.splice(index, 1);
-    differences.splice(index + 1, 0, difference);
     this.editedDiffIndex.set(
       swapIndex(this.editedDiffIndex(), index, index + 1),
     );
-    this.differences.setValue(differences);
-    this.differences.markAsDirty();
-    this.differences.updateValueAndValidity();
+    this.setItems(
+      this.form.differences,
+      moveItem(this.form.differences().value(), index, index + 1),
+    );
   }
   //#endregion
 
@@ -523,7 +500,7 @@ export class IcoInstructionEditorComponent {
 
   public editColorReuse(entry: IcoColorReuse, index: number): void {
     this.editedReuseIndex.set(index);
-    this.editedReuse.set(structuredClone(entry));
+    this.editedReuse.set(copyFormValue(entry));
   }
 
   public closeColorReuse(): void {
@@ -532,15 +509,13 @@ export class IcoInstructionEditorComponent {
   }
 
   public saveColorReuse(entry: IcoColorReuse): void {
-    const entries = [...this.colorReuses.value];
+    const entries = [...this.form.colorReuses().value()];
     if (this.editedReuseIndex() === -1) {
       entries.push(entry);
     } else {
       entries.splice(this.editedReuseIndex(), 1, entry);
     }
-    this.colorReuses.setValue(entries);
-    this.colorReuses.markAsDirty();
-    this.colorReuses.updateValueAndValidity();
+    this.setItems(this.form.colorReuses, entries);
     this.closeColorReuse();
   }
 
@@ -555,11 +530,10 @@ export class IcoInstructionEditorComponent {
             // keep tracking the edited reuse, which shifted up
             this.editedReuseIndex.update((i) => i - 1);
           }
-          const entries = [...this.colorReuses.value];
-          entries.splice(index, 1);
-          this.colorReuses.setValue(entries);
-          this.colorReuses.markAsDirty();
-          this.colorReuses.updateValueAndValidity();
+          this.setItems(
+            this.form.colorReuses,
+            this.form.colorReuses().value().filter((_, i) => i !== index),
+          );
         }
       });
   }
@@ -568,75 +542,55 @@ export class IcoInstructionEditorComponent {
     if (index < 1) {
       return;
     }
-    const entry = this.colorReuses.value[index];
-    const entries = [...this.colorReuses.value];
-    entries.splice(index, 1);
-    entries.splice(index - 1, 0, entry);
     this.editedReuseIndex.set(
       swapIndex(this.editedReuseIndex(), index, index - 1),
     );
-    this.colorReuses.setValue(entries);
-    this.colorReuses.markAsDirty();
-    this.colorReuses.updateValueAndValidity();
+    this.setItems(
+      this.form.colorReuses,
+      moveItem(this.form.colorReuses().value(), index, index - 1),
+    );
   }
 
   public moveColorReuseDown(index: number): void {
-    if (index + 1 >= this.colorReuses.value.length) {
+    if (index + 1 >= this.form.colorReuses().value().length) {
       return;
     }
-    const entry = this.colorReuses.value[index];
-    const entries = [...this.colorReuses.value];
-    entries.splice(index, 1);
-    entries.splice(index + 1, 0, entry);
     this.editedReuseIndex.set(
       swapIndex(this.editedReuseIndex(), index, index + 1),
     );
-    this.colorReuses.setValue(entries);
-    this.colorReuses.markAsDirty();
-    this.colorReuses.updateValueAndValidity();
+    this.setItems(
+      this.form.colorReuses,
+      moveItem(this.form.colorReuses().value(), index, index + 1),
+    );
   }
   //#endregion
 
   public onLanguageCheckedIdsChange(ids: string[]): void {
-    this.languages.setValue(ids);
-    this.languages.markAsDirty();
-    this.languages.updateValueAndValidity();
+    setFieldFromChild(this.form.languages, [...(ids || [])]);
   }
 
   public onFeatureCheckedIdsChange(ids: string[]): void {
-    this.features.setValue(ids);
-    this.features.markAsDirty();
-    this.features.updateValueAndValidity();
+    setFieldFromChild(this.form.features, [...(ids || [])]);
   }
 
   public onToolCheckedIdsChange(ids: string[]): void {
-    this.tools.setValue(ids);
-    this.tools.markAsDirty();
-    this.tools.updateValueAndValidity();
+    setFieldFromChild(this.form.tools, [...(ids || [])]);
   }
 
   public onColorCheckedIdsChange(ids: string[]): void {
-    this.colors.setValue(ids);
-    this.colors.markAsDirty();
-    this.colors.updateValueAndValidity();
+    setFieldFromChild(this.form.colors, [...(ids || [])]);
   }
 
-  public onDateChange(date: HistoricalDateModel | null): void {
-    this.date.setValue(date);
-    this.date.markAsDirty();
-    this.date.updateValueAndValidity();
+  public onDateChange(date: HistoricalDateModel | undefined | null): void {
+    setFieldFromChild(this.form.date, copyFormValue(date) || null);
   }
 
   public onLinksChange(ids: AssertedCompositeId[]): void {
-    this.links.setValue(ids);
-    this.links.markAsDirty();
-    this.links.updateValueAndValidity();
+    setFieldFromChild(this.form.links, copyFormValue(ids || []));
   }
 
-  public onAssertionChange(assertion: Assertion | null): void {
-    this.assertion.setValue(assertion);
-    this.assertion.markAsDirty();
-    this.assertion.updateValueAndValidity();
+  public onAssertionChange(assertion: Assertion | undefined | null): void {
+    setFieldFromChild(this.form.assertion, copyFormValue(assertion) || null);
   }
 
   public renderLabel(label: string): string {
@@ -644,47 +598,27 @@ export class IcoInstructionEditorComponent {
   }
 
   public onEntryChange(entry: ThesaurusEntry): void {
-    this.subject.setValue(entry.value);
-    this.subject.markAsDirty();
-    this.subject.updateValueAndValidity();
+    this.form.subject().value.set(entry.value);
+    this.form.subject().markAsDirty();
   }
 
-  private getInstruction(): IcoInstruction {
-    // sequences are space-delimited: split on any whitespace run
-    const sequences =
-      this.sequences.value?.split(/\s+/).filter((s) => s.length) || [];
-
-    return {
-      eid: this.eid.value || undefined,
-      types: this.types.value,
-      subject: this.subject.value || undefined,
-      script: this.script.value || '',
-      text: this.text.value || undefined,
-      sequences: sequences.length ? sequences : undefined,
-      repertoire: this.repertoire.value || undefined,
-      location: this.location.value || '',
-      position: this.position.value || '',
-      positionNote: this.positionNote.value || undefined,
-      targetLocation: this.targetLocation.value || undefined,
-      implementation: this.implementation.value || undefined,
-      differences: this.differences.value?.length
-        ? this.differences.value
-        : undefined,
-      note: this.note.value || undefined,
-      description: this.description.value || undefined,
-      features: this.features.value?.length ? this.features.value : undefined,
-      languages: this.languages.value?.length
-        ? this.languages.value
-        : undefined,
-      tools: this.tools.value?.length ? this.tools.value : undefined,
-      colors: this.colors.value?.length ? this.colors.value : undefined,
-      colorReuses: this.colorReuses.value?.length
-        ? this.colorReuses.value
-        : undefined,
-      links: this.links.value?.length ? this.links.value : undefined,
-      date: this.hasDate.value && this.date.value ? this.date.value : undefined,
-      assertion: this.assertion.value || undefined,
-    };
+  /**
+   * Enter in a text input saves the instruction, where the save button
+   * would be enabled.
+   */
+  public onEnterKey(event: Event): void {
+    // an input in a child's own form (e.g. the finder of the subjects
+    // tree) belongs to that form, which handles its Enter
+    if (
+      !isImplicitSubmission(event) ||
+      (event.target as HTMLInputElement).form
+    ) {
+      return;
+    }
+    event.preventDefault();
+    if (!this.form().invalid() && this.form().dirty()) {
+      this.save();
+    }
   }
 
   public cancel(): void {
@@ -692,25 +626,21 @@ export class IcoInstructionEditorComponent {
   }
 
   /**
-   * Saves the current form data by updating the `data` model signal.
-   * This method can be called manually (e.g., by a Save button) or
-   * automatically (via auto-save).
-   * @param pristine If true (default), the form is marked as pristine
-   * after saving.
-   * Set to false for auto-save if you want the form to remain dirty.
+   * Save the current draft into the `instruction` model signal.
+   * @param pristine If true (default), the form's interaction state is
+   * cleared after saving.
    */
   public save(pristine = true): void {
-    if (this.form.invalid) {
+    if (this.form().invalid()) {
       // show validation errors
-      this.form.markAllAsTouched();
+      this.form().markAsTouched();
       return;
     }
 
-    const data = this.getInstruction();
-    this.instruction.set(data);
+    this.instruction.set(toInstruction(this._draft()));
 
     if (pristine) {
-      this.form.markAsPristine();
+      this.form().reset();
     }
   }
 }

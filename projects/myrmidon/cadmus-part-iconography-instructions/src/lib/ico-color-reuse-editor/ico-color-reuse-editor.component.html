@@ -1,15 +1,16 @@
-<form [formGroup]="form" (submit)="save(); $event.stopPropagation()">
+<div (keydown.enter)="onEnterKey($event)">
   <div class="form-row">
     <!-- color (bound) -->
     @if (colorEntries()?.length) {
     <mat-form-field>
       <mat-label>color</mat-label>
-      <mat-select [formControl]="color">
+      <mat-select [formField]="form.color">
         @for (e of colorEntries(); track e.id) {
         <mat-option [value]="e.id">{{ e.value }}</mat-option>
         }
       </mat-select>
-      @if ($any(color).errors?.required && (color.dirty || color.touched)) {
+      @if (form.color().getError('required') && (form.color().dirty() ||
+      form.color().touched())) {
       <mat-error>color required</mat-error>
       }
     </mat-form-field>
@@ -17,10 +18,12 @@
     <!-- color (free) -->
     <mat-form-field>
       <mat-label>color</mat-label>
-      <input matInput [formControl]="color" />
-      @if ($any(color).errors?.required && (color.dirty || color.touched)) {
+      <input matInput [formField]="form.color" />
+      @if (form.color().getError('required') && (form.color().dirty() ||
+      form.color().touched())) {
       <mat-error>color required</mat-error>
-      } @if ($any(color).errors?.maxlength && (color.dirty || color.touched)) {
+      } @if (form.color().getError('maxLength') && (form.color().dirty() ||
+      form.color().touched())) {
       <mat-error>color too long</mat-error>
       }
     </mat-form-field>
@@ -29,12 +32,12 @@
     <!-- location -->
     <mat-form-field>
       <mat-label>location</mat-label>
-      <input matInput [formControl]="location" />
-      @if ($any(location).errors?.required && (location.dirty ||
-      location.touched)) {
+      <input matInput [formField]="form.location" />
+      @if (form.location().getError('required') && (form.location().dirty() ||
+      form.location().touched())) {
       <mat-error>location required</mat-error>
-      } @if ($any(location).errors?.maxlength && (location.dirty ||
-      location.touched)) {
+      } @if (form.location().getError('maxLength') && (form.location().dirty()
+      || form.location().touched())) {
       <mat-error>location too long</mat-error>
       }
     </mat-form-field>
@@ -43,8 +46,9 @@
   <div>
     <mat-form-field class="long-text">
       <mat-label>note</mat-label>
-      <textarea matInput [formControl]="note" rows="3"></textarea>
-      @if ($any(note).errors?.maxlength && (note.dirty || note.touched)) {
+      <textarea matInput [formField]="form.note" rows="3"></textarea>
+      @if (form.note().getError('maxLength') && (form.note().dirty() ||
+      form.note().touched())) {
       <mat-error>note too long</mat-error>
       }
     </mat-form-field>
@@ -60,12 +64,13 @@
       <mat-icon class="mat-warn">clear</mat-icon>
     </button>
     <button
-      type="submit"
+      type="button"
       mat-icon-button
       matTooltip="Accept changes"
-      [disabled]="form.invalid || form.pristine"
+      [disabled]="form().invalid() || !form().dirty()"
+      (click)="save()"
     >
       <mat-icon class="mat-primary">check_circle</mat-icon>
     </button>
   </div>
-</form>
+</div>

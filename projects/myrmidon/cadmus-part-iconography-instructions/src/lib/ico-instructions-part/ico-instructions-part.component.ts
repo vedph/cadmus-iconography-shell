@@ -1,41 +1,27 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
-  Signal,
+  computed,
+  inject,
+  linkedSignal,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  UntypedFormGroup,
-} from '@angular/forms';
 
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { AuthJwtService } from '@myrmidon/auth-jwt-login';
-
-import { FlatLookupPipe, NgxToolsValidators } from '@myrmidon/ngx-tools';
+import { FlatLookupPipe, NgxToolsSignalValidators } from '@myrmidon/ngx-tools';
 import {
   CloseSaveButtonsComponent,
+  copyFormValue,
+  HelpLinkComponent,
   ModelEditorComponentBase,
 } from '@myrmidon/cadmus-ui';
-import {
-  EditedObject,
-  ThesauriSet,
-  ThesaurusEntry,
-} from '@myrmidon/cadmus-core';
+import { ThesaurusEntry } from '@myrmidon/cadmus-core';
 import { DialogService } from '@myrmidon/ngx-mat-tools';
 import { LookupProviderOptions } from '@myrmidon/cadmus-refs-lookup';
 
@@ -51,6 +37,17 @@ interface IcoInstructionsPartSettings {
 }
 
 /**
+ * The editable shape behind the part form.
+ */
+interface IcoInstructionsPartControls {
+  instructions: IcoInstruction[];
+}
+
+function toDraft(part?: IcoInstructionsPart | null): IcoInstructionsPartControls {
+  return { instructions: copyFormValue(part?.instructions || []) };
+}
+
+/**
  * Get the new position of the item at index after swapping the items
  * at indexes a and b.
  */
@@ -59,6 +56,15 @@ function swapIndex(index: number, a: number, b: number): number {
     return b;
   }
   return index === b ? a : index;
+}
+
+/**
+ * Get a copy of items where the item at index has been moved to newIndex.
+ */
+function moveItem<T>(items: T[], index: number, newIndex: number): T[] {
+  const moved = [...items];
+  moved.splice(newIndex, 0, ...moved.splice(index, 1));
+  return moved;
 }
 
 /**
@@ -75,271 +81,114 @@ function swapIndex(index: number, a: number, b: number): number {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
-    ReactiveFormsModule,
     MatButtonModule,
     MatCardModule,
     MatExpansionModule,
-    MatFormFieldModule,
     MatIconModule,
-    MatInputModule,
-    MatSelectModule,
     MatTooltipModule,
     // cadmus
     CloseSaveButtonsComponent,
     FlatLookupPipe,
     IcoInstructionEditorComponent,
+    HelpLinkComponent
   ],
   templateUrl: './ico-instructions-part.component.html',
   styleUrl: './ico-instructions-part.component.css',
 })
-export class IcoInstructionsPartComponent
-  extends ModelEditorComponentBase<IcoInstructionsPart>
-  implements OnInit
-{
+export class IcoInstructionsPartComponent extends ModelEditorComponentBase<IcoInstructionsPart> {
+  private readonly _dialogService = inject(DialogService);
+
   public readonly editedIndex = signal<number>(-1);
   public readonly edited = signal<IcoInstruction | undefined>(undefined);
-  // reactive view of instructions form control value for zoneless CD
-  public readonly instructionsList: Signal<IcoInstruction[]>;
 
   // ico-instruction-types
-  public readonly instrTypeEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
-  );
+  public readonly instrTypeEntries = this.entriesOf('ico-instruction-types');
   // ico-instruction-type-tags
-  public readonly instrTypeTagEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
+  public readonly instrTypeTagEntries = this.entriesOf(
+    'ico-instruction-type-tags',
   );
   // ico-instruction-subjects
-  public readonly instrSubjectEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
+  public readonly instrSubjectEntries = this.entriesOf(
+    'ico-instruction-subjects',
   );
   // ico-instruction-scripts
-  public readonly instrScriptEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
+  public readonly instrScriptEntries = this.entriesOf(
+    'ico-instruction-scripts',
   );
   // ico-instruction-diff-types
-  public readonly instrDiffTypeEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
+  public readonly instrDiffTypeEntries = this.entriesOf(
+    'ico-instruction-diff-types',
   );
   // ico-instruction-positions
-  public readonly instrPositionEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
+  public readonly instrPositionEntries = this.entriesOf(
+    'ico-instruction-positions',
   );
   // ico-instruction-feats
-  public readonly instrFeatEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
-  );
+  public readonly instrFeatEntries = this.entriesOf('ico-instruction-feats');
   // ico-instruction-languages
-  public readonly instrLangEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
+  public readonly instrLangEntries = this.entriesOf(
+    'ico-instruction-languages',
   );
   // ico-instruction-tools
-  public readonly instrToolEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
-  );
+  public readonly instrToolEntries = this.entriesOf('ico-instruction-tools');
   // ico-instruction-colors
-  public readonly instrColorEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
-  );
+  public readonly instrColorEntries = this.entriesOf('ico-instruction-colors');
   // assertion-tags
-  public readonly assTagEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
-  );
+  public readonly assTagEntries = this.entriesOf('assertion-tags');
   // doc-reference-types
-  public readonly docRefTypeEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
-  );
+  public readonly docRefTypeEntries = this.entriesOf('doc-reference-types');
   // doc-reference-tags
-  public readonly docRefTagEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
-  );
+  public readonly docRefTagEntries = this.entriesOf('doc-reference-tags');
   // asserted-id-scopes
-  public readonly assIdScopeEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
-  );
+  public readonly assIdScopeEntries = this.entriesOf('asserted-id-scopes');
   // asserted-id-tags
-  public readonly assIdTagEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
-  );
+  public readonly assIdTagEntries = this.entriesOf('asserted-id-tags');
   // asserted-id-features
-  public readonly assIdFeatureEntries = signal<ThesaurusEntry[] | undefined>(
-    undefined,
-  );
+  public readonly assIdFeatureEntries = this.entriesOf('asserted-id-features');
 
   // lookup options depending on role
   public readonly lookupProviderOptions = signal<
     LookupProviderOptions | undefined
   >(undefined);
 
-  public instructions: FormControl<IcoInstruction[]>;
+  private readonly _draft = linkedSignal(() => toDraft(this.data()?.value));
+  public readonly form = this.createForm(this._draft, (p) => {
+    // at least 1 entry
+    NgxToolsSignalValidators.strictMinLength(p.instructions, 1);
+  });
 
-  constructor(
-    authService: AuthJwtService,
-    formBuilder: FormBuilder,
-    private _dialogService: DialogService,
-  ) {
-    super(authService, formBuilder);
-    // form
-    this.instructions = formBuilder.control([], {
-      // at least 1 entry
-      validators: NgxToolsValidators.strictMinLengthValidator(1),
-      nonNullable: true,
-    });
-    this.instructionsList = toSignal(this.instructions.valueChanges, {
-      initialValue: [] as IcoInstruction[],
-    });
-  }
-
-  public override ngOnInit(): void {
-    super.ngOnInit();
-  }
-
-  protected buildForm(formBuilder: FormBuilder): FormGroup | UntypedFormGroup {
-    return formBuilder.group({
-      entries: this.instructions,
-    });
-  }
-
-  private updateThesauri(thesauri: ThesauriSet): void {
-    let key = 'ico-instruction-types';
-    if (this.hasThesaurus(key)) {
-      this.instrTypeEntries.set(thesauri[key].entries);
-    } else {
-      this.instrTypeEntries.set(undefined);
-    }
-    key = 'ico-instruction-subjects';
-    if (this.hasThesaurus(key)) {
-      this.instrSubjectEntries.set(thesauri[key].entries);
-    } else {
-      this.instrSubjectEntries.set(undefined);
-    }
-    key = 'ico-instruction-type-tags';
-    if (this.hasThesaurus(key)) {
-      this.instrTypeTagEntries.set(thesauri[key].entries);
-    } else {
-      this.instrTypeTagEntries.set(undefined);
-    }
-    key = 'ico-instruction-scripts';
-    if (this.hasThesaurus(key)) {
-      this.instrScriptEntries.set(thesauri[key].entries);
-    } else {
-      this.instrScriptEntries.set(undefined);
-    }
-    key = 'ico-instruction-positions';
-    if (this.hasThesaurus(key)) {
-      this.instrPositionEntries.set(thesauri[key].entries);
-    } else {
-      this.instrPositionEntries.set(undefined);
-    }
-    key = 'ico-instruction-diff-types';
-    if (this.hasThesaurus(key)) {
-      this.instrDiffTypeEntries.set(thesauri[key].entries);
-    } else {
-      this.instrDiffTypeEntries.set(undefined);
-    }
-    key = 'ico-instruction-feats';
-    if (this.hasThesaurus(key)) {
-      this.instrFeatEntries.set(thesauri[key].entries);
-    } else {
-      this.instrFeatEntries.set(undefined);
-    }
-    key = 'ico-instruction-languages';
-    if (this.hasThesaurus(key)) {
-      this.instrLangEntries.set(thesauri[key].entries);
-    } else {
-      this.instrLangEntries.set(undefined);
-    }
-    key = 'ico-instruction-tools';
-    if (this.hasThesaurus(key)) {
-      this.instrToolEntries.set(thesauri[key].entries);
-    } else {
-      this.instrToolEntries.set(undefined);
-    }
-    key = 'ico-instruction-colors';
-    if (this.hasThesaurus(key)) {
-      this.instrColorEntries.set(thesauri[key].entries);
-    } else {
-      this.instrColorEntries.set(undefined);
-    }
-    key = 'assertion-tags';
-    if (this.hasThesaurus(key)) {
-      this.assTagEntries.set(thesauri[key].entries);
-    } else {
-      this.assTagEntries.set(undefined);
-    }
-    key = 'doc-reference-types';
-    if (this.hasThesaurus(key)) {
-      this.docRefTypeEntries.set(thesauri[key].entries);
-    } else {
-      this.docRefTypeEntries.set(undefined);
-    }
-    key = 'doc-reference-tags';
-    if (this.hasThesaurus(key)) {
-      this.docRefTagEntries.set(thesauri[key].entries);
-    } else {
-      this.docRefTagEntries.set(undefined);
-    }
-    key = 'asserted-id-scopes';
-    if (this.hasThesaurus(key)) {
-      this.assIdScopeEntries.set(thesauri[key].entries);
-    } else {
-      this.assIdScopeEntries.set(undefined);
-    }
-    key = 'asserted-id-tags';
-    if (this.hasThesaurus(key)) {
-      this.assIdTagEntries.set(thesauri[key].entries);
-    } else {
-      this.assIdTagEntries.set(undefined);
-    }
-    key = 'asserted-id-features';
-    if (this.hasThesaurus(key)) {
-      this.assIdFeatureEntries.set(thesauri[key].entries);
-    } else {
-      this.assIdFeatureEntries.set(undefined);
-    }
-  }
-
-  private updateForm(part?: IcoInstructionsPart | null): void {
-    if (!part) {
-      this.form.reset();
-      return;
-    }
-    this.instructions.setValue(part.instructions || []);
-    this.form.markAsPristine();
-  }
-
-  protected override onDataSet(data?: EditedObject<IcoInstructionsPart>): void {
-    // thesauri
-    if (data?.thesauri) {
-      this.updateThesauri(data.thesauri);
-    }
-    // settings
-    this._appRepository
-      ?.getSettingFor<IcoInstructionsPartSettings>(
-        ICO_INSTRUCTIONS_PART_TYPEID,
-        this.identity()?.roleId || undefined,
-      )
-      .then((settings) => {
-        const options = settings?.lookupProviderOptions;
-        this.lookupProviderOptions.set(options || undefined);
-      })
-      .catch((err) => {
-        console.warn(
-          `Failed to load settings for ${ICO_INSTRUCTIONS_PART_TYPEID}:`,
-          err,
+  constructor() {
+    super();
+    this.initSettings<IcoInstructionsPartSettings>(
+      ICO_INSTRUCTIONS_PART_TYPEID,
+      (settings) => {
+        this.lookupProviderOptions.set(
+          settings?.lookupProviderOptions || undefined,
         );
-        this.lookupProviderOptions.set(undefined);
-      });
-    // form
-    this.updateForm(data?.value);
+      },
+    );
+  }
+
+  private entriesOf(key: string) {
+    return computed<ThesaurusEntry[] | undefined>(
+      () => this.data()?.thesauri?.[key]?.entries,
+    );
   }
 
   protected getValue(): IcoInstructionsPart {
-    let part = this.getEditedPart(
+    const part = this.getEditedPart(
       ICO_INSTRUCTIONS_PART_TYPEID,
     ) as IcoInstructionsPart;
-    part.instructions = this.instructions.value || [];
+    part.instructions = copyFormValue(this._draft().instructions);
     return part;
+  }
+
+  /**
+   * Set the instructions, as the effect of a user action.
+   */
+  private setInstructions(instructions: IcoInstruction[]): void {
+    this.form.instructions().value.set(instructions);
+    this.form.instructions().markAsDirty();
   }
 
   public addInstruction(): void {
@@ -354,7 +203,7 @@ export class IcoInstructionsPartComponent
 
   public editInstruction(instruction: IcoInstruction, index: number): void {
     this.editedIndex.set(index);
-    this.edited.set(structuredClone(instruction));
+    this.edited.set(copyFormValue(instruction));
   }
 
   public closeInstruction(): void {
@@ -363,15 +212,13 @@ export class IcoInstructionsPartComponent
   }
 
   public saveInstruction(instruction: IcoInstruction): void {
-    const instructions = [...this.instructions.value];
+    const instructions = [...this.form.instructions().value()];
     if (this.editedIndex() === -1) {
       instructions.push(instruction);
     } else {
       instructions.splice(this.editedIndex(), 1, instruction);
     }
-    this.instructions.setValue(instructions);
-    this.instructions.markAsDirty();
-    this.instructions.updateValueAndValidity();
+    this.setInstructions(instructions);
     this.closeInstruction();
   }
 
@@ -386,11 +233,9 @@ export class IcoInstructionsPartComponent
             // keep tracking the edited instruction, which shifted up
             this.editedIndex.update((i) => i - 1);
           }
-          const instructions = [...this.instructions.value];
-          instructions.splice(index, 1);
-          this.instructions.setValue(instructions);
-          this.instructions.markAsDirty();
-          this.instructions.updateValueAndValidity();
+          this.setInstructions(
+            this.form.instructions().value().filter((_, i) => i !== index),
+          );
         }
       });
   }
@@ -399,27 +244,19 @@ export class IcoInstructionsPartComponent
     if (index < 1) {
       return;
     }
-    const instruction = this.instructions.value[index];
-    const instructions = [...this.instructions.value];
-    instructions.splice(index, 1);
-    instructions.splice(index - 1, 0, instruction);
     this.editedIndex.set(swapIndex(this.editedIndex(), index, index - 1));
-    this.instructions.setValue(instructions);
-    this.instructions.markAsDirty();
-    this.instructions.updateValueAndValidity();
+    this.setInstructions(
+      moveItem(this.form.instructions().value(), index, index - 1),
+    );
   }
 
   public moveInstructionDown(index: number): void {
-    if (index + 1 >= this.instructions.value.length) {
+    if (index + 1 >= this.form.instructions().value().length) {
       return;
     }
-    const instruction = this.instructions.value[index];
-    const instructions = [...this.instructions.value];
-    instructions.splice(index, 1);
-    instructions.splice(index + 1, 0, instruction);
     this.editedIndex.set(swapIndex(this.editedIndex(), index, index + 1));
-    this.instructions.setValue(instructions);
-    this.instructions.markAsDirty();
-    this.instructions.updateValueAndValidity();
+    this.setInstructions(
+      moveItem(this.form.instructions().value(), index, index + 1),
+    );
   }
 }

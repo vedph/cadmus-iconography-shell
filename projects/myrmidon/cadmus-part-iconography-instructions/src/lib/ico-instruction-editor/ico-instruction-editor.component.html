@@ -1,4 +1,4 @@
-<form [formGroup]="form" (submit)="save(); $event.stopPropagation()">
+<div (keydown.enter)="onEnterKey($event)">
   <mat-tab-group>
     <!-- GENERAL -->
     <mat-tab label="General">
@@ -6,8 +6,8 @@
       <div>
         <mat-form-field>
           <mat-label>EID</mat-label>
-          <input matInput [formControl]="eid" />
-          @if ($any(eid).errors?.maxlength && (eid.dirty || eid.touched)) {
+          <input matInput [formField]="form.eid" />
+          @if (form.eid().getError('maxLength') && (form.eid().dirty() || form.eid().touched())) {
             <mat-error>EID too long</mat-error>
           }
         </mat-form-field>
@@ -18,24 +18,21 @@
         <fieldset>
           <legend>types</legend>
           <!-- new type form -->
-          <form
-            [formGroup]="typeForm"
-            (submit)="addType(); $event.stopPropagation()"
-          >
+          <div>
             <fieldset>
               <div class="form-row">
                 <!-- type (bound) -->
                 @if (instrTypeEntries()?.length) {
                   <mat-form-field>
                     <mat-label>type</mat-label>
-                    <mat-select [formControl]="type">
+                    <mat-select [formField]="typeForm.type">
                       @for (e of instrTypeEntries(); track e.id) {
                         <mat-option [value]="e.id">{{ e.value }}</mat-option>
                       }
                     </mat-select>
                     @if (
-                      $any(type).errors?.required &&
-                      (type.dirty || type.touched)
+                      typeForm.type().getError('required') &&
+                      (typeForm.type().dirty() || typeForm.type().touched())
                     ) {
                       <mat-error>type required</mat-error>
                     }
@@ -44,16 +41,20 @@
                   <!-- type (free) -->
                   <mat-form-field>
                     <mat-label>type</mat-label>
-                    <input matInput [formControl]="type" />
+                    <input
+                      matInput
+                      [formField]="typeForm.type"
+                      (keydown.enter)="onTypeEnterKey($event)"
+                    />
                     @if (
-                      $any(type).errors?.required &&
-                      (type.dirty || type.touched)
+                      typeForm.type().getError('required') &&
+                      (typeForm.type().dirty() || typeForm.type().touched())
                     ) {
                       <mat-error>type required</mat-error>
                     }
                     @if (
-                      $any(type).errors?.maxlength &&
-                      (type.dirty || type.touched)
+                      typeForm.type().getError('maxLength') &&
+                      (typeForm.type().dirty() || typeForm.type().touched())
                     ) {
                       <mat-error>type too long</mat-error>
                     }
@@ -64,32 +65,24 @@
                 @if (instrTypeTagEntries()?.length) {
                   <mat-form-field>
                     <mat-label>type tag</mat-label>
-                    <mat-select [formControl]="typeTag">
+                    <mat-select [formField]="typeForm.tag">
                       @for (e of instrTypeTagEntries(); track e.id) {
                         <mat-option [value]="e.id">{{ e.value }}</mat-option>
                       }
                     </mat-select>
-                    @if (
-                      $any(typeTag).errors?.required &&
-                      (typeTag.dirty || typeTag.touched)
-                    ) {
-                      <mat-error>type tag required</mat-error>
-                    }
                   </mat-form-field>
                 } @else {
                   <!-- typeTag (free) -->
                   <mat-form-field>
                     <mat-label>type tag</mat-label>
-                    <input matInput [formControl]="typeTag" />
+                    <input
+                      matInput
+                      [formField]="typeForm.tag"
+                      (keydown.enter)="onTypeEnterKey($event)"
+                    />
                     @if (
-                      $any(typeTag).errors?.required &&
-                      (typeTag.dirty || typeTag.touched)
-                    ) {
-                      <mat-error>type tag required</mat-error>
-                    }
-                    @if (
-                      $any(typeTag).errors?.maxlength &&
-                      (typeTag.dirty || typeTag.touched)
+                      typeForm.tag().getError('maxLength') &&
+                      (typeForm.tag().dirty() || typeForm.tag().touched())
                     ) {
                       <mat-error>type tag too long</mat-error>
                     }
@@ -98,19 +91,20 @@
 
                 <!-- add button -->
                 <button
-                  type="submit"
+                  type="button"
                   mat-icon-button
                   matTooltip="Add type"
-                  [disabled]="typeForm.invalid"
+                  [disabled]="typeForm().invalid()"
+                  (click)="addType()"
                 >
                   <mat-icon class="mat-primary">add_circle</mat-icon>
                 </button>
               </div>
             </fieldset>
-          </form>
+          </div>
 
           <!-- types list -->
-          @if (typesList().length) {
+          @if (form.types().value().length) {
             <table>
               <thead>
                 <tr>
@@ -121,7 +115,7 @@
               </thead>
               <tbody>
                 @for (
-                  entry of typesList();
+                  entry of form.types().value();
                   track $index;
                   let i = $index;
                   let first = $first;
@@ -183,13 +177,13 @@
         @if (instrScriptEntries()?.length) {
           <mat-form-field>
             <mat-label>script</mat-label>
-            <mat-select [formControl]="script">
+            <mat-select [formField]="form.script">
               @for (e of instrScriptEntries(); track e.id) {
                 <mat-option [value]="e.id">{{ e.value }}</mat-option>
               }
             </mat-select>
             @if (
-              $any(script).errors?.required && (script.dirty || script.touched)
+              form.script().getError('required') && (form.script().dirty() || form.script().touched())
             ) {
               <mat-error>script required</mat-error>
             }
@@ -198,16 +192,11 @@
           <!-- script (free) -->
           <mat-form-field>
             <mat-label>script</mat-label>
-            <input matInput [formControl]="script" />
+            <input matInput [formField]="form.script" />
             @if (
-              $any(script).errors?.required && (script.dirty || script.touched)
+              form.script().getError('required') && (form.script().dirty() || form.script().touched())
             ) {
               <mat-error>script required</mat-error>
-            }
-            @if (
-              $any(script).errors?.maxlength && (script.dirty || script.touched)
-            ) {
-              <mat-error>script too long</mat-error>
             }
           </mat-form-field>
         }
@@ -215,10 +204,10 @@
           <!-- subject -->
           <mat-form-field>
             <mat-label>subject</mat-label>
-            <input matInput [formControl]="subject" />
+            <input matInput [formField]="form.subject" />
             @if (
-              $any(subject).errors?.maxlength &&
-              (subject.dirty || subject.touched)
+              form.subject().getError('maxLength') &&
+              (form.subject().dirty() || form.subject().touched())
             ) {
               <mat-error>subject too long</mat-error>
             }
@@ -228,10 +217,10 @@
         <!-- repertoire -->
         <mat-form-field>
           <mat-label>repertoire</mat-label>
-          <input matInput [formControl]="repertoire" />
+          <input matInput [formField]="form.repertoire" />
           @if (
-            $any(repertoire).errors?.maxlength &&
-            (repertoire.dirty || repertoire.touched)
+            form.repertoire().getError('maxLength') &&
+            (form.repertoire().dirty() || form.repertoire().touched())
           ) {
             <mat-error>repertoire too long</mat-error>
           }
@@ -242,7 +231,7 @@
         <div>
           <fieldset>
             <legend>subject</legend>
-            <div id="selected-subject">{{ subject.value }}</div>
+            <div id="selected-subject">{{ form.subject().value() }}</div>
             <cadmus-thesaurus-tree
               [entries]="instrSubjectEntries()"
               rootLabel="subjects"
@@ -258,7 +247,7 @@
         <div>
           <cadmus-ui-flag-set
             [flags]="languageFlags()"
-            [checkedIds]="languages.value"
+            [checkedIds]="form.languages().value()"
             (checkedIdsChange)="onLanguageCheckedIdsChange($event)"
           />
         </div>
@@ -268,8 +257,8 @@
       <div>
         <mat-form-field class="long-text">
           <mat-label>text</mat-label>
-          <textarea matInput [formControl]="text" rows="3"></textarea>
-          @if ($any(text).errors?.maxlength && (text.dirty || text.touched)) {
+          <textarea matInput [formField]="form.text" rows="3"></textarea>
+          @if (form.text().getError('maxLength') && (form.text().dirty() || form.text().touched())) {
             <mat-error>text too long</mat-error>
           }
         </mat-form-field>
@@ -279,13 +268,7 @@
       <div>
         <mat-form-field class="long-text">
           <mat-label>sequences</mat-label>
-          <textarea matInput [formControl]="sequences"></textarea>
-          @if (
-            $any(sequences).errors?.maxlength &&
-            (sequences.dirty || sequences.touched)
-          ) {
-            <mat-error>sequences too long</mat-error>
-          }
+          <textarea matInput [formField]="form.sequences"></textarea>
           <mat-hint>space-delimited</mat-hint>
         </mat-form-field>
       </div>
@@ -295,10 +278,10 @@
         <!-- location -->
         <mat-form-field>
           <mat-label>location</mat-label>
-          <input matInput [formControl]="location" />
+          <input matInput [formField]="form.location" />
           @if (
-            $any(location).errors?.maxlength &&
-            (location.dirty || location.touched)
+            form.location().getError('maxLength') &&
+            (form.location().dirty() || form.location().touched())
           ) {
             <mat-error>location too long</mat-error>
           }
@@ -307,10 +290,10 @@
         <!-- target location -->
         <mat-form-field>
           <mat-label>target location</mat-label>
-          <input matInput [formControl]="targetLocation" />
+          <input matInput [formField]="form.targetLocation" />
           @if (
-            $any(targetLocation).errors?.maxlength &&
-            (targetLocation.dirty || targetLocation.touched)
+            form.targetLocation().getError('maxLength') &&
+            (form.targetLocation().dirty() || form.targetLocation().touched())
           ) {
             <mat-error>target location too long</mat-error>
           }
@@ -326,14 +309,14 @@
             @if (instrPositionEntries()?.length) {
               <mat-form-field>
                 <mat-label>position</mat-label>
-                <mat-select [formControl]="position">
+                <mat-select [formField]="form.position">
                   @for (e of instrPositionEntries(); track e.id) {
                     <mat-option [value]="e.id">{{ e.value }}</mat-option>
                   }
                 </mat-select>
                 @if (
-                  $any(position).errors?.required &&
-                  (position.dirty || position.touched)
+                  form.position().getError('required') &&
+                  (form.position().dirty() || form.position().touched())
                 ) {
                   <mat-error>position required</mat-error>
                 }
@@ -342,16 +325,16 @@
               <!-- position (free) -->
               <mat-form-field>
                 <mat-label>position</mat-label>
-                <input matInput [formControl]="position" />
+                <input matInput [formField]="form.position" />
                 @if (
-                  $any(position).errors?.required &&
-                  (position.dirty || position.touched)
+                  form.position().getError('required') &&
+                  (form.position().dirty() || form.position().touched())
                 ) {
                   <mat-error>position required</mat-error>
                 }
                 @if (
-                  $any(position).errors?.maxlength &&
-                  (position.dirty || position.touched)
+                  form.position().getError('maxLength') &&
+                  (form.position().dirty() || form.position().touched())
                 ) {
                   <mat-error>position too long</mat-error>
                 }
@@ -361,10 +344,10 @@
             <!-- positionNote -->
             <mat-form-field class="long-text">
               <mat-label>position note</mat-label>
-              <textarea matInput [formControl]="positionNote"></textarea>
+              <textarea matInput [formField]="form.positionNote"></textarea>
               @if (
-                $any(positionNote).errors?.maxlength &&
-                (positionNote.dirty || positionNote.touched)
+                form.positionNote().getError('maxLength') &&
+                (form.positionNote().dirty() || form.positionNote().touched())
               ) {
                 <mat-error>position note too long</mat-error>
               }
@@ -377,10 +360,10 @@
         <fieldset>
           <legend>date</legend>
           <!-- date-->
-          <mat-checkbox [formControl]="hasDate">date</mat-checkbox>
-          @if (hasDateValue()) {
+          <mat-checkbox [formField]="form.hasDate">date</mat-checkbox>
+          @if (form.hasDate().value()) {
             <cadmus-refs-historical-date
-              [date]="date.value || undefined"
+              [date]="form.date().value() || undefined"
               (dateChange)="onDateChange($event!)"
             />
           }
@@ -393,7 +376,7 @@
                 [assTagEntries]="assTagEntries()"
                 [refTagEntries]="docRefTagEntries()"
                 [refTypeEntries]="docRefTypeEntries()"
-                [assertion]="assertion.value || undefined"
+                [assertion]="form.assertion().value() || undefined"
                 (assertionChange)="onAssertionChange($event!)"
               />
             </fieldset>
@@ -405,8 +388,8 @@
       <div class="mt">
         <mat-form-field class="long-text">
           <mat-label>note</mat-label>
-          <textarea matInput [formControl]="note" rows="3"></textarea>
-          @if ($any(note).errors?.maxlength && (note.dirty || note.touched)) {
+          <textarea matInput [formField]="form.note" rows="3"></textarea>
+          @if (form.note().getError('maxLength') && (form.note().dirty() || form.note().touched())) {
             <mat-error>note too long</mat-error>
           }
         </mat-form-field>
@@ -419,10 +402,10 @@
       <div>
         <mat-form-field class="long-text">
           <mat-label>implementation</mat-label>
-          <textarea matInput [formControl]="implementation" rows="3"></textarea>
+          <textarea matInput [formField]="form.implementation" rows="3"></textarea>
           @if (
-            $any(implementation).errors?.maxlength &&
-            (implementation.dirty || implementation.touched)
+            form.implementation().getError('maxLength') &&
+            (form.implementation().dirty() || form.implementation().touched())
           ) {
             <mat-error>implementation too long</mat-error>
           }
@@ -441,7 +424,7 @@
             <mat-icon>add_circle</mat-icon> diff
           </button>
         </div>
-        @if (differencesList().length) {
+        @if (form.differences().value().length) {
           <table>
             <thead>
               <tr>
@@ -452,7 +435,7 @@
             </thead>
             <tbody>
               @for (
-                entry of differencesList();
+                entry of form.differences().value();
                 track $index;
                 let i = $index;
                 let first = $first;
@@ -533,10 +516,10 @@
       <div>
         <mat-form-field class="long-text">
           <mat-label>description</mat-label>
-          <textarea matInput [formControl]="description" rows="3"></textarea>
+          <textarea matInput [formField]="form.description" rows="3"></textarea>
           @if (
-            $any(description).errors?.maxlength &&
-            (description.dirty || description.touched)
+            form.description().getError('maxLength') &&
+            (form.description().dirty() || form.description().touched())
           ) {
             <mat-error>description too long</mat-error>
           }
@@ -550,7 +533,7 @@
             <legend>features</legend>
             <cadmus-ui-flag-set
               [flags]="featureFlags()"
-              [checkedIds]="features.value"
+              [checkedIds]="form.features().value()"
               (checkedIdsChange)="onFeatureCheckedIdsChange($event)"
             />
           </fieldset>
@@ -564,7 +547,7 @@
             <legend>tools</legend>
             <cadmus-ui-flag-set
               [flags]="toolFlags()"
-              [checkedIds]="tools.value"
+              [checkedIds]="form.tools().value()"
               (checkedIdsChange)="onToolCheckedIdsChange($event)"
             />
           </fieldset>
@@ -578,7 +561,7 @@
             <legend>colors</legend>
             <cadmus-ui-flag-set
               [flags]="colorFlags()"
-              [checkedIds]="colors.value"
+              [checkedIds]="form.colors().value()"
               (checkedIdsChange)="onColorCheckedIdsChange($event)"
             />
           </fieldset>
@@ -596,7 +579,7 @@
           <mat-icon>add_circle</mat-icon> color reuse
         </button>
       </div>
-      @if (colorReusesList().length) {
+      @if (form.colorReuses().value().length) {
         <table>
           <thead>
             <tr>
@@ -607,7 +590,7 @@
           </thead>
           <tbody>
             @for (
-              entry of colorReusesList();
+              entry of form.colorReuses().value();
               track $index;
               let i = $index;
               let first = $first;
@@ -691,7 +674,7 @@
         [refTypeEntries]="docRefTypeEntries()"
         [featureEntries]="idFeatureEntries()"
         [lookupProviderOptions]="lookupProviderOptions()"
-        [ids]="links.value"
+        [ids]="form.links().value()"
         [canSwitchMode]="true"
         [canEditTarget]="true"
         (idsChange)="onLinksChange($event)"
@@ -710,12 +693,13 @@
       <mat-icon class="mat-warn">clear</mat-icon>
     </button>
     <button
-      type="submit"
+      type="button"
       mat-icon-button
       matTooltip="Accept changes"
-      [disabled]="form.invalid || form.pristine"
+      [disabled]="form().invalid() || !form().dirty()"
+      (click)="save()"
     >
       <mat-icon class="mat-primary">check_circle</mat-icon>
     </button>
   </div>
-</form>
+</div>

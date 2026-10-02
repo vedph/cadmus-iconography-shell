@@ -3,20 +3,15 @@ import {
   Component,
   effect,
   input,
+  linkedSignal,
   model,
   output,
+  untracked,
 } from '@angular/core';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { form, FormField, maxLength, required } from '@angular/forms/signals';
 
 // material
 import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -24,16 +19,41 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ThesaurusEntry } from '@myrmidon/cadmus-core';
+import { isImplicitSubmission } from '@myrmidon/cadmus-ui';
 
 import { IcoInstructionDiff } from '../ico-instructions-part';
+
+/**
+ * The editable shape behind the diff form.
+ */
+interface IcoInstructionDiffControls {
+  type: string;
+  target: string;
+  note: string;
+}
+
+function toDraft(diff?: IcoInstructionDiff | null): IcoInstructionDiffControls {
+  return {
+    type: diff?.type || '',
+    target: diff?.target || '',
+    note: diff?.note || '',
+  };
+}
+
+function toDiff(draft: IcoInstructionDiffControls): IcoInstructionDiff {
+  return {
+    type: draft.type.trim(),
+    target: draft.target.trim() || undefined,
+    note: draft.note.trim() || undefined,
+  };
+}
 
 @Component({
   selector: 'cadmus-ico-instruction-diff-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatButtonModule,
-    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -50,49 +70,51 @@ export class IcoInstructionDiffEditorComponent {
   // ico-instruction-diff-types
   public readonly instrDiffTypeEntries = input<ThesaurusEntry[] | undefined>();
 
-  public type: FormControl<string>;
-  public target: FormControl<string | null>;
-  public note: FormControl<string | null>;
-  public form: FormGroup;
+  // the draft is rebuilt from a new diff, but kept on the echo of our save
+  private readonly _draft = linkedSignal<
+    IcoInstructionDiff | undefined,
+    IcoInstructionDiffControls
+  >({
+    source: () => this.diff(),
+    computation: (diff, previous) =>
+      previous &&
+      JSON.stringify(diff) === JSON.stringify(toDiff(previous.value))
+        ? previous.value
+        : toDraft(diff),
+  });
 
-  constructor(formBuilder: FormBuilder) {
-    // form
-    this.type = formBuilder.control('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(100)],
-    });
-    this.target = formBuilder.control(null, Validators.maxLength(100));
-    this.note = formBuilder.control(null, Validators.maxLength(1000));
-    this.form = formBuilder.group({
-      type: this.type,
-      target: this.target,
-      note: this.note,
-    });
+  public readonly form = form(this._draft, (p) => {
+    required(p.type);
+    maxLength(p.type, 100);
+    maxLength(p.target, 100);
+    maxLength(p.note, 1000);
+  });
 
-    // when model changes, update form
+  constructor() {
+    // clear the interaction state once the draft mirrors the bound diff
     effect(() => {
-      const diff = this.diff();
-      this.updateForm(diff);
+      const draft = this._draft();
+      untracked(() => {
+        if (this.isDraftInSync(draft)) {
+          this.form().reset();
+        }
+      });
     });
   }
 
-  private updateForm(data: IcoInstructionDiff | undefined | null): void {
-    if (!data) {
-      this.form.reset();
-    } else {
-      this.type.setValue(data.type || '');
-      this.target.setValue(data.target || null);
-      this.note.setValue(data.note || null);
-      this.form.markAsPristine();
-    }
+  private isDraftInSync(draft: IcoInstructionDiffControls): boolean {
+    return JSON.stringify(draft) === JSON.stringify(toDraft(this.diff()));
   }
 
-  private getDiff(): IcoInstructionDiff {
-    return {
-      type: this.type.value?.trim() || '',
-      target: this.target.value?.trim() || undefined,
-      note: this.note.value?.trim() || undefined,
-    };
+  public onEnterKey(event: Event): void {
+    if (!isImplicitSubmission(event)) {
+      return;
+    }
+    event.preventDefault();
+    // like the disabled save button
+    if (!this.form().invalid() && this.form().dirty()) {
+      this.save();
+    }
   }
 
   public cancel(): void {
@@ -100,25 +122,21 @@ export class IcoInstructionDiffEditorComponent {
   }
 
   /**
-   * Saves the current form data by updating the `data` model signal.
-   * This method can be called manually (e.g., by a Save button) or
-   * automatically (via auto-save).
-   * @param pristine If true (default), the form is marked as pristine
-   * after saving.
-   * Set to false for auto-save if you want the form to remain dirty.
+   * Save the current draft into the `diff` model signal.
+   * @param pristine If true (default), the form's interaction state is
+   * cleared after saving.
    */
   public save(pristine = true): void {
-    if (this.form.invalid) {
+    if (this.form().invalid()) {
       // show validation errors
-      this.form.markAllAsTouched();
+      this.form().markAsTouched();
       return;
     }
 
-    const data = this.getDiff();
-    this.diff.set(data);
+    this.diff.set(toDiff(this._draft()));
 
     if (pristine) {
-      this.form.markAsPristine();
+      this.form().reset();
     }
   }
 }

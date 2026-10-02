@@ -1,5 +1,5 @@
 import { Component, input, output } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormField } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -60,7 +60,13 @@ class HistoricalDateStubComponent {
   public readonly dateChange = output<HistoricalDateModel | undefined>();
 }
 
-@Component({ selector: 'cadmus-thesaurus-tree', template: '' })
+// like the real tree, whose browser has a finder input in its own form
+@Component({
+  selector: 'cadmus-thesaurus-tree',
+  template: `<form (submit)="$event.preventDefault()">
+    <input aria-label="finder" />
+  </form>`,
+})
 class ThesaurusTreeStubComponent {
   public readonly entries = input<ThesaurusEntry[]>();
   public readonly renderLabel = input<(label: string) => string>();
@@ -74,6 +80,28 @@ class FlagSetStubComponent {
   public readonly checkedIdsChange = output<string[]>();
 }
 //#endregion
+
+/**
+ * A copy of value without the identity tags a signal form adds to the
+ * objects in its arrays, for comparing form values.
+ */
+function plain<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value));
+}
+
+/**
+ * True if value or any object nested in it has own Symbol keys,
+ * like the identity tags a signal form adds to array items.
+ */
+function hasSymbols(value: unknown): boolean {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  return (
+    Object.getOwnPropertySymbols(value).length > 0 ||
+    Object.values(value).some((v) => hasSymbols(v))
+  );
+}
 
 function entries(...ids: string[]): ThesaurusEntry[] {
   return ids.map((id) => ({ id, value: id.toUpperCase() }));
@@ -137,7 +165,7 @@ async function setup(options: SetupOptions = {}) {
     on: { cancelEdit },
     providers: [{ provide: DialogService, useValue: dialogService }],
     componentImports: [
-      ReactiveFormsModule,
+      FormField,
       MatButtonModule,
       MatCheckboxModule,
       MatExpansionModule,
@@ -203,57 +231,51 @@ describe('IcoInstructionEditorComponent', () => {
   it('should create with an empty invalid form', async () => {
     const { component } = await setup();
     expect(component).toBeTruthy();
-    expect(component.types.value).toEqual([]);
-    expect(component.form.invalid).toBe(true);
-    expect(component.typesList()).toEqual([]);
+    expect(plain(component.form.types().value())).toEqual([]);
+    expect(component.form().invalid()).toBe(true);
   });
 
   it('should fill the form from a full instruction', async () => {
     const { component } = await setup({ instruction: fullInstruction() });
     const i = fullInstruction();
-    expect(component.eid.value).toBe(i.eid);
-    expect(component.types.value).toEqual(i.types);
-    expect(component.subject.value).toBe(i.subject);
-    expect(component.script.value).toBe(i.script);
-    expect(component.text.value).toBe(i.text);
-    expect(component.sequences.value).toBe('a b');
-    expect(component.repertoire.value).toBe(i.repertoire);
-    expect(component.location.value).toBe(i.location);
-    expect(component.position.value).toBe(i.position);
-    expect(component.positionNote.value).toBe(i.positionNote);
-    expect(component.targetLocation.value).toBe(i.targetLocation);
-    expect(component.implementation.value).toBe(i.implementation);
-    expect(component.differences.value).toEqual(i.differences);
-    expect(component.note.value).toBe(i.note);
-    expect(component.description.value).toBe(i.description);
-    expect(component.features.value).toEqual(i.features);
-    expect(component.languages.value).toEqual(i.languages);
-    expect(component.tools.value).toEqual(i.tools);
-    expect(component.colors.value).toEqual(i.colors);
-    expect(component.colorReuses.value).toEqual(i.colorReuses);
-    expect(component.links.value).toEqual(i.links);
-    expect(component.hasDate.value).toBe(true);
-    expect(component.date.value).toEqual(i.date);
-    expect(component.assertion.value).toEqual(i.assertion);
-    expect(component.form.valid).toBe(true);
-    expect(component.form.pristine).toBe(true);
-    // signal views
-    expect(component.typesList()).toEqual(i.types);
-    expect(component.differencesList()).toEqual(i.differences);
-    expect(component.colorReusesList()).toEqual(i.colorReuses);
-    expect(component.hasDateValue()).toBe(true);
+    expect(component.form.eid().value()).toBe(i.eid);
+    expect(plain(component.form.types().value())).toEqual(i.types);
+    expect(component.form.subject().value()).toBe(i.subject);
+    expect(component.form.script().value()).toBe(i.script);
+    expect(component.form.text().value()).toBe(i.text);
+    expect(component.form.sequences().value()).toBe('a b');
+    expect(component.form.repertoire().value()).toBe(i.repertoire);
+    expect(component.form.location().value()).toBe(i.location);
+    expect(component.form.position().value()).toBe(i.position);
+    expect(component.form.positionNote().value()).toBe(i.positionNote);
+    expect(component.form.targetLocation().value()).toBe(i.targetLocation);
+    expect(component.form.implementation().value()).toBe(i.implementation);
+    expect(plain(component.form.differences().value())).toEqual(i.differences);
+    expect(component.form.note().value()).toBe(i.note);
+    expect(component.form.description().value()).toBe(i.description);
+    expect(component.form.features().value()).toEqual(i.features);
+    expect(component.form.languages().value()).toEqual(i.languages);
+    expect(component.form.tools().value()).toEqual(i.tools);
+    expect(component.form.colors().value()).toEqual(i.colors);
+    expect(plain(component.form.colorReuses().value())).toEqual(i.colorReuses);
+    expect(plain(component.form.links().value())).toEqual(i.links);
+    expect(component.form.hasDate().value()).toBe(true);
+    expect(component.form.date().value()).toEqual(i.date);
+    expect(component.form.assertion().value()).toEqual(i.assertion);
+    expect(component.form().valid()).toBe(true);
+    expect(component.form().dirty()).toBe(false);
   });
 
   it('should fill the form with defaults from a minimal instruction', async () => {
     const { component } = await setup({ instruction: minInstruction() });
-    expect(component.eid.value).toBeNull();
-    expect(component.sequences.value).toBeNull();
-    expect(component.differences.value).toEqual([]);
-    expect(component.features.value).toEqual([]);
-    expect(component.links.value).toEqual([]);
-    expect(component.hasDate.value).toBe(false);
-    expect(component.date.value).toBeNull();
-    expect(component.assertion.value).toBeNull();
+    expect(component.form.eid().value()).toBe('');
+    expect(component.form.sequences().value()).toBe('');
+    expect(plain(component.form.differences().value())).toEqual([]);
+    expect(component.form.features().value()).toEqual([]);
+    expect(plain(component.form.links().value())).toEqual([]);
+    expect(component.form.hasDate().value()).toBe(false);
+    expect(component.form.date().value()).toBeNull();
+    expect(component.form.assertion().value()).toBeNull();
   });
 
   it('should reset the form when instruction is reset', async () => {
@@ -262,18 +284,18 @@ describe('IcoInstructionEditorComponent', () => {
     });
     fixture.componentRef.setInput('instruction', undefined);
     fixture.detectChanges();
-    expect(component.eid.value).toBeNull();
-    expect(component.types.value).toEqual([]);
-    expect(component.typesList()).toEqual([]);
-    expect(component.hasDate.value).toBe(false);
+    expect(component.form.eid().value()).toBe('');
+    expect(plain(component.form.types().value())).toEqual([]);
+    expect(plain(component.form.types().value())).toEqual([]);
+    expect(component.form.hasDate().value()).toBe(false);
   });
 
   it('should show EID too long error', async () => {
     const { component, refresh } = await setup({
       instruction: minInstruction(),
     });
-    component.eid.setValue('x'.repeat(101));
-    component.eid.markAsTouched();
+    component.form.eid().value.set('x'.repeat(101));
+    component.form.eid().markAsTouched();
     await refresh();
     expect(screen.getByText('EID too long')).toBeTruthy();
   });
@@ -318,7 +340,7 @@ describe('IcoInstructionEditorComponent', () => {
     const { component } = await setup({ instruction });
     await openTab('Implementation');
     await screen.findByText('d2');
-    component.editDiff(component.differences.value[0], 0);
+    component.editDiff(component.form.differences().value()[0], 0);
     component.saveDiff({ type: 'dz', target: 'y' });
     expect(await screen.findByText('dz')).toBeTruthy();
     expect(screen.getByText('y')).toBeTruthy();
@@ -347,14 +369,14 @@ describe('IcoInstructionEditorComponent', () => {
     await user.type(screen.getByLabelText('type'), ' t9 ');
     await user.type(screen.getByLabelText('type tag'), ' g ');
     await user.click(screen.getByRole('button', { description: 'Add type' }));
-    expect(component.types.value).toEqual([
+    expect(plain(component.form.types().value())).toEqual([
       { value: 't1' },
       { value: 't9', tag: 'g' },
     ]);
-    expect(component.types.dirty).toBe(true);
+    expect(component.form.types().dirty()).toBe(true);
     // type form was reset
-    expect(component.type.value).toBe('');
-    expect(component.typeTag.value).toBeNull();
+    expect(component.typeForm.type().value()).toBe('');
+    expect(component.typeForm.tag().value()).toBe('');
     expect(screen.getByText('t9')).toBeTruthy();
   });
 
@@ -367,27 +389,27 @@ describe('IcoInstructionEditorComponent', () => {
     });
     await user.type(screen.getByLabelText('type'), 't2');
     await user.click(screen.getByRole('button', { description: 'Add type' }));
-    expect(component.types.value.length).toBe(2);
+    expect(component.form.types().value().length).toBe(2);
     expect(instructionChange).not.toHaveBeenCalled();
     // same when pressing Enter in the type input
     await user.type(screen.getByLabelText('type'), 't3{Enter}');
-    expect(component.types.value.length).toBe(3);
+    expect(component.form.types().value().length).toBe(3);
     expect(instructionChange).not.toHaveBeenCalled();
   });
 
   it('should add a type with no tag as undefined tag', async () => {
     const { component } = await setup({ instruction: minInstruction() });
-    component.type.setValue('t2');
-    component.typeTag.setValue('  ');
+    component.typeForm.type().value.set('t2');
+    component.typeForm.tag().value.set('  ');
     component.addType();
-    expect(component.types.value[1]).toEqual({ value: 't2', tag: undefined });
+    expect(plain(component.form.types().value()[1])).toEqual({ value: 't2', tag: undefined });
   });
 
   it('should not add an invalid type', async () => {
     const { component } = await setup({ instruction: minInstruction() });
     component.addType();
-    expect(component.types.value.length).toBe(1);
-    expect(component.type.touched).toBe(true);
+    expect(component.form.types().value().length).toBe(1);
+    expect(component.typeForm.type().touched()).toBe(true);
   });
 
   it('should add a type picked from thesauri', async () => {
@@ -405,7 +427,7 @@ describe('IcoInstructionEditorComponent', () => {
     await user.click(tagSelect);
     await user.click(await screen.findByRole('option', { name: 'G2' }));
     await user.click(screen.getByRole('button', { description: 'Add type' }));
-    expect(component.types.value[1]).toEqual({ value: 't2', tag: 'g2' });
+    expect(plain(component.form.types().value()[1])).toEqual({ value: 't2', tag: 'g2' });
   });
 
   it('should delete a type via UI', async () => {
@@ -414,8 +436,8 @@ describe('IcoInstructionEditorComponent', () => {
     await user.click(
       screen.getAllByRole('button', { description: 'Delete this type' })[0],
     );
-    expect(component.types.value).toEqual([{ value: 't2' }]);
-    expect(component.types.dirty).toBe(true);
+    expect(plain(component.form.types().value())).toEqual([{ value: 't2' }]);
+    expect(component.form.types().dirty()).toBe(true);
   });
 
   it('should move types up and down', async () => {
@@ -430,15 +452,15 @@ describe('IcoInstructionEditorComponent', () => {
     expect((up[0] as HTMLButtonElement).disabled).toBe(true);
     expect((down[1] as HTMLButtonElement).disabled).toBe(true);
     await user.click(down[0]);
-    expect(component.types.value.map((t) => t.value)).toEqual(['t2', 't1']);
+    expect(component.form.types().value().map((t) => t.value)).toEqual(['t2', 't1']);
     await user.click(
       screen.getAllByRole('button', { description: 'Move this type up' })[1],
     );
-    expect(component.types.value.map((t) => t.value)).toEqual(['t1', 't2']);
+    expect(component.form.types().value().map((t) => t.value)).toEqual(['t1', 't2']);
     // out of range moves are ignored
     component.moveTypeUp(0);
     component.moveTypeDown(1);
-    expect(component.types.value.map((t) => t.value)).toEqual(['t1', 't2']);
+    expect(component.form.types().value().map((t) => t.value)).toEqual(['t1', 't2']);
   });
   //#endregion
 
@@ -454,7 +476,7 @@ describe('IcoInstructionEditorComponent', () => {
       .find((e) => e.textContent?.includes('LATIN'))!;
     await user.click(select);
     await user.click(await screen.findByRole('option', { name: 'GREEK' }));
-    expect(component.script.value).toBe('greek');
+    expect(component.form.script().value()).toBe('greek');
   });
 
   it('should use a select for position with thesaurus', async () => {
@@ -468,7 +490,7 @@ describe('IcoInstructionEditorComponent', () => {
       .find((e) => e.textContent?.includes('TOP'))!;
     await user.click(select);
     await user.click(await screen.findByRole('option', { name: 'BOTTOM' }));
-    expect(component.position.value).toBe('bottom');
+    expect(component.form.position().value()).toBe('bottom');
   });
 
   it('should show required errors for script and position', async () => {
@@ -504,8 +526,8 @@ describe('IcoInstructionEditorComponent', () => {
     expect(tree.renderLabel()!('x:y')).toBe(component.renderLabel('x:y'));
     tree.entryChange.emit({ id: 'a.c', value: 'A.C' });
     await refresh();
-    expect(component.subject.value).toBe('A.C');
-    expect(component.subject.dirty).toBe(true);
+    expect(component.form.subject().value()).toBe('A.C');
+    expect(component.form.subject().dirty()).toBe(true);
     expect(document.getElementById('selected-subject')!.textContent).toBe(
       'A.C',
     );
@@ -524,8 +546,8 @@ describe('IcoInstructionEditorComponent', () => {
     expect(flags.flags()).toEqual(component.languageFlags());
     expect(flags.checkedIds()).toEqual(['lat']);
     flags.checkedIdsChange.emit(['grc']);
-    expect(component.languages.value).toEqual(['grc']);
-    expect(component.languages.dirty).toBe(true);
+    expect(component.form.languages().value()).toEqual(['grc']);
+    expect(component.form.languages().dirty()).toBe(true);
   });
 
   it('should not render flag sets without thesauri', async () => {
@@ -546,7 +568,7 @@ describe('IcoInstructionEditorComponent', () => {
     });
     expect(stub(fixture, 'cadmus-refs-historical-date')).toBeUndefined();
     await user.click(screen.getByRole('checkbox', { name: 'date' }));
-    expect(component.hasDate.value).toBe(true);
+    expect(component.form.hasDate().value()).toBe(true);
     const date = stub<HistoricalDateStubComponent>(
       fixture,
       'cadmus-refs-historical-date',
@@ -555,8 +577,8 @@ describe('IcoInstructionEditorComponent', () => {
     expect(date.date()).toBeUndefined();
     const d: HistoricalDateModel = { a: { value: 1300 } };
     date.dateChange.emit(d);
-    expect(component.date.value).toEqual(d);
-    expect(component.date.dirty).toBe(true);
+    expect(component.form.date().value()).toEqual(d);
+    expect(component.form.date().dirty()).toBe(true);
   });
 
   it('should pass existing date to date editor', async () => {
@@ -583,8 +605,8 @@ describe('IcoInstructionEditorComponent', () => {
     expect(ass.refTypeEntries()).toEqual(entries('rt'));
     expect(ass.refTagEntries()).toEqual(entries('rg'));
     ass.assertionChange.emit({ rank: 3 });
-    expect(component.assertion.value).toEqual({ rank: 3 });
-    expect(component.assertion.dirty).toBe(true);
+    expect(component.form.assertion().value()).toEqual({ rank: 3 });
+    expect(component.form.assertion().dirty()).toBe(true);
   });
   //#endregion
 
@@ -628,10 +650,10 @@ describe('IcoInstructionEditorComponent', () => {
     await user.click(
       within(editor).getByRole('button', { description: 'Accept changes' }),
     );
-    expect(component.differences.value).toEqual([
+    expect(plain(component.form.differences().value())).toEqual([
       { type: 'new', target: undefined, note: undefined },
     ]);
-    expect(component.differences.dirty).toBe(true);
+    expect(component.form.differences().dirty()).toBe(true);
     expect(component.editedDiff()).toBeUndefined();
     expect(component.editedDiffIndex()).toBe(-1);
   });
@@ -646,9 +668,9 @@ describe('IcoInstructionEditorComponent', () => {
     expect(component.editedDiffIndex()).toBe(0);
     // edited copy is a clone
     expect(component.editedDiff()).toEqual(fullInstruction().differences![0]);
-    expect(component.editedDiff()).not.toBe(component.differences.value[0]);
+    expect(component.editedDiff()).not.toBe(component.form.differences().value()[0]);
     component.saveDiff({ type: 'd9' });
-    expect(component.differences.value).toEqual([{ type: 'd9' }]);
+    expect(plain(component.form.differences().value())).toEqual([{ type: 'd9' }]);
   });
 
   it('should close diff editor on cancel', async () => {
@@ -665,7 +687,7 @@ describe('IcoInstructionEditorComponent', () => {
       within(editor).getByRole('button', { description: 'Discard changes' }),
     );
     expect(component.editedDiff()).toBeUndefined();
-    expect(component.differences.value.length).toBe(1);
+    expect(component.form.differences().value().length).toBe(1);
   });
 
   it('should delete a diff upon confirmation', async () => {
@@ -681,8 +703,8 @@ describe('IcoInstructionEditorComponent', () => {
       'Confirmation',
       'Delete diff #1?',
     );
-    expect(component.differences.value).toEqual([]);
-    expect(component.differences.dirty).toBe(true);
+    expect(plain(component.form.differences().value())).toEqual([]);
+    expect(component.form.differences().dirty()).toBe(true);
   });
 
   it('should not delete a diff without confirmation', async () => {
@@ -691,12 +713,12 @@ describe('IcoInstructionEditorComponent', () => {
       confirm: false,
     });
     component.deleteDiff(0);
-    expect(component.differences.value.length).toBe(1);
+    expect(component.form.differences().value().length).toBe(1);
   });
 
   it('should close the diff editor when deleting the edited diff', async () => {
     const { component } = await setup({ instruction: fullInstruction() });
-    component.editDiff(component.differences.value[0], 0);
+    component.editDiff(component.form.differences().value()[0], 0);
     component.deleteDiff(0);
     expect(component.editedDiff()).toBeUndefined();
     expect(component.editedDiffIndex()).toBe(-1);
@@ -706,11 +728,11 @@ describe('IcoInstructionEditorComponent', () => {
     const instruction = fullInstruction();
     instruction.differences = [{ type: 'a' }, { type: 'b' }, { type: 'c' }];
     const { component } = await setup({ instruction });
-    component.editDiff(component.differences.value[2], 2);
+    component.editDiff(component.form.differences().value()[2], 2);
     component.deleteDiff(0);
     expect(component.editedDiffIndex()).toBe(1);
     component.saveDiff({ type: 'C' });
-    expect(component.differences.value).toEqual([{ type: 'b' }, { type: 'C' }]);
+    expect(plain(component.form.differences().value())).toEqual([{ type: 'b' }, { type: 'C' }]);
   });
 
   it('should move diffs up and down', async () => {
@@ -718,21 +740,21 @@ describe('IcoInstructionEditorComponent', () => {
     instruction.differences = [{ type: 'a' }, { type: 'b' }, { type: 'c' }];
     const { component } = await setup({ instruction });
     component.moveDiffDown(0);
-    expect(component.differences.value.map((d) => d.type)).toEqual([
+    expect(component.form.differences().value().map((d) => d.type)).toEqual([
       'b',
       'a',
       'c',
     ]);
     component.moveDiffUp(2);
-    expect(component.differences.value.map((d) => d.type)).toEqual([
+    expect(component.form.differences().value().map((d) => d.type)).toEqual([
       'b',
       'c',
       'a',
     ]);
-    expect(component.differences.dirty).toBe(true);
+    expect(component.form.differences().dirty()).toBe(true);
     component.moveDiffUp(0);
     component.moveDiffDown(2);
-    expect(component.differences.value.map((d) => d.type)).toEqual([
+    expect(component.form.differences().value().map((d) => d.type)).toEqual([
       'b',
       'c',
       'a',
@@ -743,7 +765,7 @@ describe('IcoInstructionEditorComponent', () => {
     const instruction = fullInstruction();
     instruction.differences = [{ type: 'a' }, { type: 'b' }, { type: 'c' }];
     const { component } = await setup({ instruction });
-    component.editDiff(component.differences.value[1], 1);
+    component.editDiff(component.form.differences().value()[1], 1);
     // [a,b,c] -> [b,a,c]
     component.moveDiffUp(1);
     expect(component.editedDiffIndex()).toBe(0);
@@ -757,7 +779,7 @@ describe('IcoInstructionEditorComponent', () => {
     component.moveDiffUp(2);
     expect(component.editedDiffIndex()).toBe(2);
     component.saveDiff({ type: 'B' });
-    expect(component.differences.value.map((d) => d.type)).toEqual([
+    expect(component.form.differences().value().map((d) => d.type)).toEqual([
       'c',
       'a',
       'B',
@@ -774,11 +796,11 @@ describe('IcoInstructionEditorComponent', () => {
       description: 'Move this diff down',
     });
     await user.click(down[0]);
-    expect(component.differences.value.map((d) => d.type)).toEqual(['b', 'a']);
+    expect(component.form.differences().value().map((d) => d.type)).toEqual(['b', 'a']);
     await user.click(
       screen.getAllByRole('button', { description: 'Move this diff up' })[1],
     );
-    expect(component.differences.value.map((d) => d.type)).toEqual(['a', 'b']);
+    expect(component.form.differences().value().map((d) => d.type)).toEqual(['a', 'b']);
   });
   //#endregion
 
@@ -806,12 +828,12 @@ describe('IcoInstructionEditorComponent', () => {
     feats.checkedIdsChange.emit(['f2']);
     tools.checkedIdsChange.emit([]);
     colors.checkedIdsChange.emit(['red', 'blue']);
-    expect(component.features.value).toEqual(['f2']);
-    expect(component.tools.value).toEqual([]);
-    expect(component.colors.value).toEqual(['red', 'blue']);
-    expect(component.features.dirty).toBe(true);
-    expect(component.tools.dirty).toBe(true);
-    expect(component.colors.dirty).toBe(true);
+    expect(component.form.features().value()).toEqual(['f2']);
+    expect(component.form.tools().value()).toEqual([]);
+    expect(component.form.colors().value()).toEqual(['red', 'blue']);
+    expect(component.form.features().dirty()).toBe(true);
+    expect(component.form.tools().dirty()).toBe(true);
+    expect(component.form.colors().dirty()).toBe(true);
   });
 
   it('should list color reuses with looked-up labels', async () => {
@@ -850,10 +872,10 @@ describe('IcoInstructionEditorComponent', () => {
     await user.click(
       within(editor).getByRole('button', { description: 'Accept changes' }),
     );
-    expect(component.colorReuses.value).toEqual([
+    expect(plain(component.form.colorReuses().value())).toEqual([
       { color: 'green', location: '5r', note: undefined },
     ]);
-    expect(component.colorReuses.dirty).toBe(true);
+    expect(component.form.colorReuses().dirty()).toBe(true);
     expect(component.editedReuse()).toBeUndefined();
   });
 
@@ -867,9 +889,9 @@ describe('IcoInstructionEditorComponent', () => {
       }),
     );
     expect(component.editedReuseIndex()).toBe(0);
-    expect(component.editedReuse()).not.toBe(component.colorReuses.value[0]);
+    expect(component.editedReuse()).not.toBe(component.form.colorReuses().value()[0]);
     component.saveColorReuse({ color: 'blue', location: '9v' });
-    expect(component.colorReuses.value).toEqual([
+    expect(plain(component.form.colorReuses().value())).toEqual([
       { color: 'blue', location: '9v' },
     ]);
   });
@@ -908,7 +930,7 @@ describe('IcoInstructionEditorComponent', () => {
       'Confirmation',
       'Delete color reuse #1?',
     );
-    expect(component.colorReuses.value).toEqual([]);
+    expect(plain(component.form.colorReuses().value())).toEqual([]);
   });
 
   it('should not delete a color reuse without confirmation', async () => {
@@ -917,12 +939,12 @@ describe('IcoInstructionEditorComponent', () => {
       confirm: false,
     });
     component.deleteColorReuse(0);
-    expect(component.colorReuses.value.length).toBe(1);
+    expect(component.form.colorReuses().value().length).toBe(1);
   });
 
   it('should close the reuse editor when deleting the edited reuse', async () => {
     const { component } = await setup({ instruction: fullInstruction() });
-    component.editColorReuse(component.colorReuses.value[0], 0);
+    component.editColorReuse(component.form.colorReuses().value()[0], 0);
     component.deleteColorReuse(0);
     expect(component.editedReuse()).toBeUndefined();
   });
@@ -934,11 +956,11 @@ describe('IcoInstructionEditorComponent', () => {
       { color: 'b', location: '2' },
     ];
     const { component } = await setup({ instruction });
-    component.editColorReuse(component.colorReuses.value[1], 1);
+    component.editColorReuse(component.form.colorReuses().value()[1], 1);
     component.deleteColorReuse(0);
     expect(component.editedReuseIndex()).toBe(0);
     component.saveColorReuse({ color: 'B', location: '2' });
-    expect(component.colorReuses.value).toEqual([
+    expect(plain(component.form.colorReuses().value())).toEqual([
       { color: 'B', location: '2' },
     ]);
   });
@@ -951,16 +973,16 @@ describe('IcoInstructionEditorComponent', () => {
       { color: 'c', location: '3' },
     ];
     const { component } = await setup({ instruction });
-    component.editColorReuse(component.colorReuses.value[0], 0);
+    component.editColorReuse(component.form.colorReuses().value()[0], 0);
     component.moveColorReuseDown(0);
-    expect(component.colorReuses.value.map((r) => r.color)).toEqual([
+    expect(component.form.colorReuses().value().map((r) => r.color)).toEqual([
       'b',
       'a',
       'c',
     ]);
     expect(component.editedReuseIndex()).toBe(1);
     component.moveColorReuseUp(2);
-    expect(component.colorReuses.value.map((r) => r.color)).toEqual([
+    expect(component.form.colorReuses().value().map((r) => r.color)).toEqual([
       'b',
       'c',
       'a',
@@ -969,12 +991,12 @@ describe('IcoInstructionEditorComponent', () => {
     // out of range
     component.moveColorReuseUp(0);
     component.moveColorReuseDown(2);
-    expect(component.colorReuses.value.map((r) => r.color)).toEqual([
+    expect(component.form.colorReuses().value().map((r) => r.color)).toEqual([
       'b',
       'c',
       'a',
     ]);
-    expect(component.colorReuses.dirty).toBe(true);
+    expect(component.form.colorReuses().dirty()).toBe(true);
   });
 
   it('should move color reuses via UI buttons', async () => {
@@ -990,7 +1012,7 @@ describe('IcoInstructionEditorComponent', () => {
       description: 'Move this color reuse down',
     });
     await user.click(down[0]);
-    expect(component.colorReuses.value.map((r) => r.color)).toEqual([
+    expect(component.form.colorReuses().value().map((r) => r.color)).toEqual([
       'b',
       'a',
     ]);
@@ -999,7 +1021,7 @@ describe('IcoInstructionEditorComponent', () => {
         description: 'Move this color reuse up',
       })[1],
     );
-    expect(component.colorReuses.value.map((r) => r.color)).toEqual([
+    expect(component.form.colorReuses().value().map((r) => r.color)).toEqual([
       'a',
       'b',
     ]);
@@ -1023,7 +1045,7 @@ describe('IcoInstructionEditorComponent', () => {
       fixture,
       'cadmus-refs-asserted-composite-ids',
     );
-    expect(ids.ids()).toEqual(fullInstruction().links);
+    expect(plain(ids.ids())).toEqual(fullInstruction().links);
     expect(ids.idTagEntries()).toEqual(entries('it'));
     expect(ids.idScopeEntries()).toEqual(entries('is'));
     expect(ids.featureEntries()).toEqual(entries('if'));
@@ -1034,8 +1056,8 @@ describe('IcoInstructionEditorComponent', () => {
       { target: { gid: 'x', label: 'X' } },
     ];
     ids.idsChange.emit(links);
-    expect(component.links.value).toEqual(links);
-    expect(component.links.dirty).toBe(true);
+    expect(plain(component.form.links().value())).toEqual(links);
+    expect(component.form.links().dirty()).toBe(true);
   });
   //#endregion
 
@@ -1066,7 +1088,7 @@ describe('IcoInstructionEditorComponent', () => {
       ...fullInstruction(),
       eid: 'i2',
     });
-    expect(component.form.pristine).toBe(true);
+    expect(component.form().dirty()).toBe(false);
   });
 
   it('should save a minimal instruction with undefined optional fields', async () => {
@@ -1105,7 +1127,7 @@ describe('IcoInstructionEditorComponent', () => {
     const { component, instructionChange } = await setup({
       instruction: fullInstruction(),
     });
-    component.hasDate.setValue(false);
+    component.form.hasDate().value.set(false);
     component.save();
     expect(instructionChange.mock.calls[0][0].date).toBeUndefined();
   });
@@ -1114,7 +1136,7 @@ describe('IcoInstructionEditorComponent', () => {
     const { component, instructionChange } = await setup({
       instruction: minInstruction(),
     });
-    component.sequences.setValue('  a   b\nc  ');
+    component.form.sequences().value.set('  a   b\nc  ');
     component.save();
     expect(instructionChange.mock.calls[0][0].sequences).toEqual([
       'a',
@@ -1130,7 +1152,7 @@ describe('IcoInstructionEditorComponent', () => {
     });
     // clearing a textarea sets an empty string, not null
     await user.clear(screen.getByLabelText('sequences'));
-    expect(component.sequences.value).toBe('');
+    expect(component.form.sequences().value()).toBe('');
     component.save();
     expect(instructionChange.mock.calls[0][0].sequences).toBeUndefined();
   });
@@ -1139,21 +1161,21 @@ describe('IcoInstructionEditorComponent', () => {
     const { component, instructionChange } = await setup({
       instruction: minInstruction(),
     });
-    component.note.setValue('n');
-    component.form.markAsDirty();
+    component.form.note().value.set('n');
+    component.form().markAsDirty();
     component.save(false);
     expect(instructionChange).toHaveBeenCalled();
-    expect(component.form.dirty).toBe(true);
+    expect(component.form().dirty()).toBe(true);
   });
 
   it('should not save an invalid instruction', async () => {
     const { component, instructionChange } = await setup({
       instruction: minInstruction(),
     });
-    component.types.setValue([]);
+    component.form.types().value.set([]);
     component.save();
     expect(instructionChange).not.toHaveBeenCalled();
-    expect(component.types.touched).toBe(true);
+    expect(component.form.types().touched()).toBe(true);
   });
 
   it('should emit cancelEdit on cancel', async () => {
@@ -1166,6 +1188,149 @@ describe('IcoInstructionEditorComponent', () => {
     );
     expect(cancelEdit).toHaveBeenCalledTimes(1);
     expect(instructionChange).not.toHaveBeenCalled();
+  });
+  //#endregion
+
+  //#region Signal forms behavior
+  it('should stay pristine when children echo their normalized values', async () => {
+    const { component, fixture } = await setup({
+      instruction: fullInstruction(),
+      inputs: {
+        instrLanguageEntries: entries('lat', 'grc'),
+        instrSubjectEntries: undefined,
+      },
+    });
+    // autosaving children emit a normalized copy of what they got,
+    // e.g. with null for missing properties
+    stub<HistoricalDateStubComponent>(
+      fixture,
+      'cadmus-refs-historical-date',
+    ).dateChange.emit({
+      a: { value: 1200, hint: null },
+    } as unknown as HistoricalDateModel);
+    stub<AssertionStubComponent>(
+      fixture,
+      'cadmus-refs-assertion',
+    ).assertionChange.emit({ rank: 1, tag: null } as unknown as Assertion);
+    stub<FlagSetStubComponent>(
+      fixture,
+      'cadmus-ui-flag-set',
+    ).checkedIdsChange.emit(['lat']);
+    await openTab('Links', 'cadmus-refs-asserted-composite-ids');
+    stub<AssertedCompositeIdsStubComponent>(
+      fixture,
+      'cadmus-refs-asserted-composite-ids',
+    ).idsChange.emit(
+      fullInstruction().links!.map(
+        (l) => ({ ...l, tag: null }) as unknown as AssertedCompositeId,
+      ),
+    );
+    await fixture.whenStable();
+    expect(component.form().dirty()).toBe(false);
+    expect(
+      (
+        screen.getByRole('button', {
+          description: 'Accept changes',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
+  it('should keep the draft when its own save echoes back normalized', async () => {
+    const user = userEvent.setup();
+    const { component, fixture } = await setup({
+      instruction: minInstruction(),
+    });
+    await user.type(screen.getByLabelText('EID'), 'abc ');
+    component.save();
+    await fixture.whenStable();
+    expect(component.instruction()?.eid).toBe('abc');
+    expect(component.form.eid().value()).toBe('abc ');
+    await user.type(screen.getByLabelText('EID'), 'd');
+    expect(component.form.eid().value()).toBe('abc d');
+  });
+
+  it('should emit an instruction with no form tags', async () => {
+    const { component, instructionChange } = await setup({
+      instruction: fullInstruction(),
+    });
+    // walk the list fields, so that the form tags their items
+    for (const field of [
+      component.form.types,
+      component.form.differences,
+      component.form.colorReuses,
+      component.form.links,
+    ]) {
+      for (const item of field as unknown as Iterable<() => unknown>) {
+        item();
+      }
+    }
+    component.moveTypeDown(0);
+    component.save();
+    const saved = instructionChange.mock.calls[0][0] as IcoInstruction;
+    expect(saved.types.map((t) => t.value)).toEqual(['t2', 't1']);
+    expect(hasSymbols(saved)).toBe(false);
+  });
+
+  it('should not tag the objects of the bound instruction', async () => {
+    const instruction = fullInstruction();
+    const { component } = await setup({ instruction });
+    for (const item of component.form.types as unknown as Iterable<
+      () => unknown
+    >) {
+      item();
+    }
+    expect(hasSymbols(instruction)).toBe(false);
+  });
+
+  it('should save on Enter in a text input when changed', async () => {
+    const user = userEvent.setup();
+    const { instructionChange } = await setup({
+      instruction: minInstruction(),
+    });
+    // pristine: Enter does nothing, like the disabled save button
+    await user.type(screen.getByLabelText('EID'), '{Enter}');
+    expect(instructionChange).not.toHaveBeenCalled();
+    await user.type(screen.getByLabelText('EID'), 'e1{Enter}');
+    expect(instructionChange).toHaveBeenCalledTimes(1);
+    expect(instructionChange.mock.calls[0][0].eid).toBe('e1');
+  });
+
+  it('should not save on Enter when invalid', async () => {
+    const user = userEvent.setup();
+    const { instructionChange } = await setup({
+      instruction: minInstruction(),
+    });
+    await user.clear(screen.getByLabelText('script'));
+    await user.type(screen.getByLabelText('EID'), 'e1{Enter}');
+    expect(instructionChange).not.toHaveBeenCalled();
+  });
+
+  it('should not save on Enter in a child form input', async () => {
+    const user = userEvent.setup();
+    const { instructionChange } = await setup({
+      instruction: minInstruction(),
+      inputs: { instrSubjectEntries: entries('a.b') },
+    });
+    // the instruction can be saved...
+    await user.type(screen.getByLabelText('EID'), 'e1');
+    // ...but Enter in the tree finder belongs to the tree's own form
+    await user.type(screen.getByLabelText('finder'), 'x{Enter}');
+    expect(instructionChange).not.toHaveBeenCalled();
+  });
+
+  it('should not save on Enter in a textarea', async () => {
+    const user = userEvent.setup();
+    const { instructionChange } = await setup({
+      instruction: minInstruction(),
+    });
+    await user.type(screen.getByLabelText('note'), 'a{Enter}b');
+    expect(instructionChange).not.toHaveBeenCalled();
+  });
+
+  it('should render no form element of its own', async () => {
+    const { container } = await setup({ instruction: fullInstruction() });
+    expect(container.querySelector('form')).toBeNull();
   });
   //#endregion
 });

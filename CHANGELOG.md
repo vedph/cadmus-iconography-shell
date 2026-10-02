@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0
+
+- 2026-10-02: ⚠️ migrated to signal forms bumping major version to 2.
+
 ## 1.0.1
 
 - 2026-10-02: ⚠️ migrated tests from Karma/Jasmine to Vitest, using the Angular `@angular/build:unit-test` builder:

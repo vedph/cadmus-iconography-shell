@@ -1,6 +1,5 @@
 import { Component, input, model, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -122,6 +121,27 @@ function instr(location: string, extra?: Partial<IcoInstruction>) {
   } as IcoInstruction;
 }
 
+/**
+ * A copy of value without the identity tags a signal form adds to the
+ * objects in its arrays, for comparing form values.
+ */
+function plain<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value));
+}
+
+/**
+ * True if value or any object nested in it has own Symbol keys.
+ */
+function hasSymbols(value: unknown): boolean {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  return (
+    Object.getOwnPropertySymbols(value).length > 0 ||
+    Object.values(value).some((v) => hasSymbols(v))
+  );
+}
+
 function buildPart(instructions: IcoInstruction[]): IcoInstructionsPart {
   return {
     id: 'p1',
@@ -196,7 +216,6 @@ async function setup(options: SetupOptions = {}) {
     ],
     componentImports: [
       CommonModule,
-      ReactiveFormsModule,
       MatButtonModule,
       MatCardModule,
       MatExpansionModule,
@@ -239,10 +258,9 @@ describe('IcoInstructionsPartComponent', () => {
   it('should create with an empty invalid form', async () => {
     const { component } = await setup();
     expect(component).toBeTruthy();
-    expect(component.instructions.value).toEqual([]);
-    expect(component.instructionsList()).toEqual([]);
+    expect(plain(component.form.instructions().value())).toEqual([]);
     // at least 1 instruction is required
-    expect(component.form.invalid).toBe(true);
+    expect(component.form().invalid()).toBe(true);
     expect(screen.queryByRole('table')).toBeNull();
   });
 
@@ -253,16 +271,15 @@ describe('IcoInstructionsPartComponent', () => {
 
   it('should reset the form when data is undefined', async () => {
     const { component } = await setup({ part: null });
-    expect(component.instructions.value).toEqual([]);
+    expect(plain(component.form.instructions().value())).toEqual([]);
   });
 
   it('should load instructions from data', async () => {
     const instructions = [instr('1r'), instr('2v')];
     const { component } = await setup({ part: buildPart(instructions) });
-    expect(component.instructions.value).toEqual(instructions);
-    expect(component.instructionsList()).toEqual(instructions);
-    expect(component.form.valid).toBe(true);
-    expect(component.form.pristine).toBe(true);
+    expect(plain(component.form.instructions().value())).toEqual(instructions);
+    expect(component.form().valid()).toBe(true);
+    expect(component.form().dirty()).toBe(false);
     expect(screen.getAllByRole('row').length).toBe(3);
   });
 
@@ -399,7 +416,7 @@ describe('IcoInstructionsPartComponent', () => {
     const { component, fixture } = await setup({
       part: buildPart([instr('a'), instr('b')]),
     });
-    component.editInstruction(component.instructions.value[1], 1);
+    component.editInstruction(component.form.instructions().value()[1], 1);
     component.saveInstruction(instr('B', { types: [{ value: 'tz' }] }));
     await fixture.whenStable();
     const rows = screen.getAllByRole('row');
@@ -454,11 +471,11 @@ describe('IcoInstructionsPartComponent', () => {
     await user.click(screen.getByRole('button', { name: /Instruction/ }));
     getEditor()!.instruction.set(instr('new'));
     await fixture.whenStable();
-    expect(component.instructions.value.map((i) => i.location)).toEqual([
+    expect(component.form.instructions().value().map((i) => i.location)).toEqual([
       'a',
       'new',
     ]);
-    expect(component.instructions.dirty).toBe(true);
+    expect(component.form.instructions().dirty()).toBe(true);
     expect(component.edited()).toBeUndefined();
     expect(component.editedIndex()).toBe(-1);
     expect(getEditor()).toBeUndefined();
@@ -477,12 +494,12 @@ describe('IcoInstructionsPartComponent', () => {
     );
     expect(component.editedIndex()).toBe(1);
     expect(component.edited()).toEqual(instr('b'));
-    expect(component.edited()).not.toBe(component.instructions.value[1]);
+    expect(component.edited()).not.toBe(component.form.instructions().value()[1]);
     expect(screen.getByText('instruction #2')).toBeTruthy();
     expect(screen.getAllByRole('row')[2].classList).toContain('selected');
     getEditor()!.instruction.set(instr('B'));
     await fixture.whenStable();
-    expect(component.instructions.value.map((i) => i.location)).toEqual([
+    expect(component.form.instructions().value().map((i) => i.location)).toEqual([
       'a',
       'B',
     ]);
@@ -492,14 +509,14 @@ describe('IcoInstructionsPartComponent', () => {
     const { component, getEditor, fixture } = await setup({
       part: buildPart([instr('a')]),
     });
-    component.editInstruction(component.instructions.value[0], 0);
+    component.editInstruction(component.form.instructions().value()[0], 0);
     fixture.detectChanges();
     getEditor()!.cancelEdit.emit();
     await fixture.whenStable();
     expect(component.edited()).toBeUndefined();
     expect(component.editedIndex()).toBe(-1);
     expect(getEditor()).toBeUndefined();
-    expect(component.instructions.value.length).toBe(1);
+    expect(component.form.instructions().value().length).toBe(1);
   });
 
   it('should delete an instruction upon confirmation', async () => {
@@ -516,10 +533,10 @@ describe('IcoInstructionsPartComponent', () => {
       'Confirmation',
       'Delete instruction?',
     );
-    expect(component.instructions.value.map((i) => i.location)).toEqual([
+    expect(component.form.instructions().value().map((i) => i.location)).toEqual([
       'b',
     ]);
-    expect(component.instructions.dirty).toBe(true);
+    expect(component.form.instructions().dirty()).toBe(true);
   });
 
   it('should not delete an instruction without confirmation', async () => {
@@ -528,14 +545,14 @@ describe('IcoInstructionsPartComponent', () => {
       confirm: false,
     });
     component.deleteInstruction(0);
-    expect(component.instructions.value.length).toBe(1);
+    expect(component.form.instructions().value().length).toBe(1);
   });
 
   it('should close editor when deleting the edited instruction', async () => {
     const { component } = await setup({
       part: buildPart([instr('a'), instr('b')]),
     });
-    component.editInstruction(component.instructions.value[1], 1);
+    component.editInstruction(component.form.instructions().value()[1], 1);
     component.deleteInstruction(1);
     expect(component.edited()).toBeUndefined();
     expect(component.editedIndex()).toBe(-1);
@@ -545,11 +562,11 @@ describe('IcoInstructionsPartComponent', () => {
     const { component } = await setup({
       part: buildPart([instr('a'), instr('b'), instr('c')]),
     });
-    component.editInstruction(component.instructions.value[2], 2);
+    component.editInstruction(component.form.instructions().value()[2], 2);
     component.deleteInstruction(0);
     expect(component.editedIndex()).toBe(1);
     component.saveInstruction(instr('C'));
-    expect(component.instructions.value.map((i) => i.location)).toEqual([
+    expect(component.form.instructions().value().map((i) => i.location)).toEqual([
       'b',
       'C',
     ]);
@@ -559,7 +576,7 @@ describe('IcoInstructionsPartComponent', () => {
     const { component } = await setup({
       part: buildPart([instr('a'), instr('b'), instr('c')]),
     });
-    component.editInstruction(component.instructions.value[0], 0);
+    component.editInstruction(component.form.instructions().value()[0], 0);
     component.deleteInstruction(2);
     expect(component.editedIndex()).toBe(0);
   });
@@ -574,17 +591,17 @@ describe('IcoInstructionsPartComponent', () => {
         description: 'Move this instruction down',
       })[0],
     );
-    expect(component.instructions.value.map((i) => i.location)).toEqual([
+    expect(component.form.instructions().value().map((i) => i.location)).toEqual([
       'b',
       'a',
     ]);
-    expect(component.instructions.dirty).toBe(true);
+    expect(component.form.instructions().dirty()).toBe(true);
     await user.click(
       screen.getAllByRole('button', {
         description: 'Move this instruction up',
       })[1],
     );
-    expect(component.instructions.value.map((i) => i.location)).toEqual([
+    expect(component.form.instructions().value().map((i) => i.location)).toEqual([
       'a',
       'b',
     ]);
@@ -596,18 +613,18 @@ describe('IcoInstructionsPartComponent', () => {
     });
     component.moveInstructionUp(0);
     component.moveInstructionDown(1);
-    expect(component.instructions.value.map((i) => i.location)).toEqual([
+    expect(component.form.instructions().value().map((i) => i.location)).toEqual([
       'a',
       'b',
     ]);
-    expect(component.instructions.dirty).toBe(false);
+    expect(component.form.instructions().dirty()).toBe(false);
   });
 
   it('should keep tracking the edited instruction when moving', async () => {
     const { component } = await setup({
       part: buildPart([instr('a'), instr('b'), instr('c')]),
     });
-    component.editInstruction(component.instructions.value[0], 0);
+    component.editInstruction(component.form.instructions().value()[0], 0);
     // [a,b,c] -> [b,a,c]
     component.moveInstructionDown(0);
     expect(component.editedIndex()).toBe(1);
@@ -618,7 +635,7 @@ describe('IcoInstructionsPartComponent', () => {
     component.moveInstructionDown(0);
     expect(component.editedIndex()).toBe(2);
     component.saveInstruction(instr('A'));
-    expect(component.instructions.value.map((i) => i.location)).toEqual([
+    expect(component.form.instructions().value().map((i) => i.location)).toEqual([
       'c',
       'b',
       'A',
@@ -642,7 +659,7 @@ describe('IcoInstructionsPartComponent', () => {
       'a',
       'b',
     ]);
-    expect(component.form.pristine).toBe(true);
+    expect(component.form().dirty()).toBe(false);
   });
 
   it('should build a new part when data has no value', async () => {
@@ -665,10 +682,12 @@ describe('IcoInstructionsPartComponent', () => {
   });
 
   it('should emit dirtyChange when instructions change', async () => {
-    const { component, dirtyChange } = await setup({
+    const { component, dirtyChange, fixture } = await setup({
       part: buildPart([instr('a')]),
     });
     component.saveInstruction(instr('b'));
+    // emitted by an effect
+    await fixture.whenStable();
     expect(dirtyChange).toHaveBeenLastCalledWith(true);
   });
 
@@ -688,6 +707,81 @@ describe('IcoInstructionsPartComponent', () => {
   it('should show save button for operators', async () => {
     await setup({ roles: ['operator'] });
     expect(screen.getByRole('button', { name: /save/ })).toBeTruthy();
+  });
+  //#endregion
+
+  //#region Signal forms behavior
+  it('should stay pristine after binding data', async () => {
+    const { component, dirtyChange } = await setup({
+      part: buildPart([instr('a')]),
+    });
+    expect(component.form().dirty()).toBe(false);
+    expect(dirtyChange).not.toHaveBeenCalledWith(true);
+  });
+
+  it('should clear the dirty state when new data is bound', async () => {
+    const { component, fixture, dirtyChange } = await setup({
+      part: buildPart([instr('a')]),
+    });
+    component.saveInstruction(instr('b'));
+    await fixture.whenStable();
+    expect(component.form().dirty()).toBe(true);
+    expect(dirtyChange).toHaveBeenLastCalledWith(true);
+    fixture.componentRef.setInput('data', {
+      value: buildPart([instr('c')]),
+      thesauri: {},
+    });
+    await fixture.whenStable();
+    expect(component.form().dirty()).toBe(false);
+    expect(dirtyChange).toHaveBeenLastCalledWith(false);
+    expect(
+      component.form.instructions().value().map((i) => i.location),
+    ).toEqual(['c']);
+  });
+
+  it('should save a part with no form tags', async () => {
+    const { component, dataChange } = await setup({
+      part: buildPart([instr('a'), instr('b')]),
+    });
+    // walk the instructions, so that the form tags them
+    for (const item of component.form.instructions as unknown as Iterable<
+      () => unknown
+    >) {
+      item();
+    }
+    component.moveInstructionDown(0);
+    component.save();
+    const saved = dataChange.mock.calls[0][0] as EditedObject<IcoInstructionsPart>;
+    expect(saved.value!.instructions.map((i) => i.location)).toEqual([
+      'b',
+      'a',
+    ]);
+    expect(hasSymbols(saved.value)).toBe(false);
+  });
+
+  it('should not tag the instructions of the bound part', async () => {
+    const part = buildPart([instr('a')]);
+    const { component } = await setup({ part });
+    for (const item of component.form.instructions as unknown as Iterable<
+      () => unknown
+    >) {
+      item();
+    }
+    expect(hasSymbols(part.instructions)).toBe(false);
+  });
+
+  it('should render no form element', async () => {
+    const { container } = await setup({ part: buildPart([instr('a')]) });
+    expect(container.querySelector('form')).toBeNull();
+  });
+
+  it('should disable the whole form when disabled', async () => {
+    const { component, fixture } = await setup({
+      part: buildPart([instr('a')]),
+    });
+    fixture.componentRef.setInput('disabled', true);
+    await fixture.whenStable();
+    expect(component.form().disabled()).toBe(true);
   });
   //#endregion
 });

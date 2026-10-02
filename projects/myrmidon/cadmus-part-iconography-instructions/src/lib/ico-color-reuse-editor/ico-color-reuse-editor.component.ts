@@ -3,20 +3,15 @@ import {
   Component,
   effect,
   input,
+  linkedSignal,
   model,
   output,
+  untracked,
 } from '@angular/core';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { form, FormField, maxLength, required } from '@angular/forms/signals';
 
 // material
 import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -25,16 +20,41 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 // cadmus
 import { ThesaurusEntry } from '@myrmidon/cadmus-core';
+import { isImplicitSubmission } from '@myrmidon/cadmus-ui';
 
 import { IcoColorReuse } from '../ico-instructions-part';
+
+/**
+ * The editable shape behind the color reuse form.
+ */
+interface IcoColorReuseControls {
+  color: string;
+  location: string;
+  note: string;
+}
+
+function toDraft(reuse?: IcoColorReuse | null): IcoColorReuseControls {
+  return {
+    color: reuse?.color || '',
+    location: reuse?.location || '',
+    note: reuse?.note || '',
+  };
+}
+
+function toReuse(draft: IcoColorReuseControls): IcoColorReuse {
+  return {
+    color: draft.color.trim(),
+    location: draft.location.trim(),
+    note: draft.note.trim() || undefined,
+  };
+}
 
 @Component({
   selector: 'cadmus-ico-color-reuse-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatButtonModule,
-    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -51,54 +71,52 @@ export class IcoColorReuseEditorComponent {
   // ico-instruction-colors
   public readonly colorEntries = input<ThesaurusEntry[] | undefined>(undefined);
 
-  public color: FormControl<string>;
-  public location: FormControl<string>;
-  public note: FormControl<string | null>;
-  public form: FormGroup;
+  // the draft is rebuilt from a new reuse, but kept on the echo of our save
+  private readonly _draft = linkedSignal<
+    IcoColorReuse | undefined,
+    IcoColorReuseControls
+  >({
+    source: () => this.reuse(),
+    computation: (reuse, previous) =>
+      previous &&
+      JSON.stringify(reuse) === JSON.stringify(toReuse(previous.value))
+        ? previous.value
+        : toDraft(reuse),
+  });
 
-  constructor(formBuilder: FormBuilder) {
-    // form
-    this.color = formBuilder.control('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(100)],
-    });
-    this.location = formBuilder.control('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(100)],
-    });
-    this.note = formBuilder.control(null, {
-      validators: [Validators.maxLength(1000)],
-    });
-    this.form = formBuilder.group({
-      color: this.color,
-      location: this.location,
-      note: this.note,
-    });
+  public readonly form = form(this._draft, (p) => {
+    required(p.color);
+    maxLength(p.color, 100);
+    required(p.location);
+    maxLength(p.location, 100);
+    maxLength(p.note, 1000);
+  });
 
-    // when model changes, update form
+  constructor() {
+    // clear the interaction state once the draft mirrors the bound reuse
     effect(() => {
-      const reuse = this.reuse();
-      this.updateForm(reuse);
+      const draft = this._draft();
+      untracked(() => {
+        if (this.isDraftInSync(draft)) {
+          this.form().reset();
+        }
+      });
     });
   }
 
-  private updateForm(data: IcoColorReuse | undefined | null): void {
-    if (!data) {
-      this.form.reset();
-    } else {
-      this.color.setValue(data.color || '');
-      this.location.setValue(data.location || '');
-      this.note.setValue(data.note || null);
-      this.form.markAsPristine();
-    }
+  private isDraftInSync(draft: IcoColorReuseControls): boolean {
+    return JSON.stringify(draft) === JSON.stringify(toDraft(this.reuse()));
   }
 
-  private getReuse(): IcoColorReuse {
-    return {
-      color: this.color.value?.trim() || '',
-      location: this.location.value?.trim() || '',
-      note: this.note.value?.trim() || undefined,
-    };
+  public onEnterKey(event: Event): void {
+    if (!isImplicitSubmission(event)) {
+      return;
+    }
+    event.preventDefault();
+    // like the disabled save button
+    if (!this.form().invalid() && this.form().dirty()) {
+      this.save();
+    }
   }
 
   public cancel(): void {
@@ -106,25 +124,21 @@ export class IcoColorReuseEditorComponent {
   }
 
   /**
-   * Saves the current form data by updating the `data` model signal.
-   * This method can be called manually (e.g., by a Save button) or
-   * automatically (via auto-save).
-   * @param pristine If true (default), the form is marked as pristine
-   * after saving.
-   * Set to false for auto-save if you want the form to remain dirty.
+   * Save the current draft into the `reuse` model signal.
+   * @param pristine If true (default), the form's interaction state is
+   * cleared after saving.
    */
   public save(pristine = true): void {
-    if (this.form.invalid) {
+    if (this.form().invalid()) {
       // show validation errors
-      this.form.markAllAsTouched();
+      this.form().markAsTouched();
       return;
     }
 
-    const reuse = this.getReuse();
-    this.reuse.set(reuse);
+    this.reuse.set(toReuse(this._draft()));
 
     if (pristine) {
-      this.form.markAsPristine();
+      this.form().reset();
     }
   }
 }

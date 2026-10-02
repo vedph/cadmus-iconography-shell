@@ -21,7 +21,12 @@ async function setup(reuse?: IcoColorReuse, colorEntries?: ThesaurusEntry[]) {
   const component = result.fixture.componentInstance;
   component.reuse.subscribe(reuseChange);
   await result.fixture.whenStable();
-  return { ...result, component, reuseChange, cancelEdit };
+  const refresh = async () => {
+    result.fixture.changeDetectorRef.markForCheck();
+    result.fixture.detectChanges();
+    await result.fixture.whenStable();
+  };
+  return { ...result, component, reuseChange, cancelEdit, refresh };
 }
 
 function getSaveButton(): HTMLButtonElement {
@@ -32,10 +37,10 @@ describe('IcoColorReuseEditorComponent', () => {
   it('should create with an empty invalid form when no reuse is set', async () => {
     const { component } = await setup();
     expect(component).toBeTruthy();
-    expect(component.color.value).toBe('');
-    expect(component.location.value).toBe('');
-    expect(component.note.value).toBeNull();
-    expect(component.form.invalid).toBe(true);
+    expect(component.form.color().value()).toBe('');
+    expect(component.form.location().value()).toBe('');
+    expect(component.form.note().value()).toBe('');
+    expect(component.form().invalid()).toBe(true);
   });
 
   it('should fill the form from the reuse model', async () => {
@@ -44,19 +49,19 @@ describe('IcoColorReuseEditorComponent', () => {
       location: '12r',
       note: 'n',
     });
-    expect(component.color.value).toBe('red');
-    expect(component.location.value).toBe('12r');
-    expect(component.note.value).toBe('n');
-    expect(component.form.valid).toBe(true);
-    expect(component.form.pristine).toBe(true);
+    expect(component.form.color().value()).toBe('red');
+    expect(component.form.location().value()).toBe('12r');
+    expect(component.form.note().value()).toBe('n');
+    expect(component.form().valid()).toBe(true);
+    expect(component.form().dirty()).toBe(false);
   });
 
   it('should reset the form when reuse is reset to undefined', async () => {
     const { component, fixture } = await setup({ color: 'x', location: 'y' });
     fixture.componentRef.setInput('reuse', undefined);
     fixture.detectChanges();
-    expect(component.color.value).toBe('');
-    expect(component.location.value).toBe('');
+    expect(component.form.color().value()).toBe('');
+    expect(component.form.location().value()).toBe('');
   });
 
   it('should render a free input for color without thesaurus', async () => {
@@ -75,8 +80,8 @@ describe('IcoColorReuseEditorComponent', () => {
     expect(select.textContent).toContain('red');
     await user.click(select);
     await user.click(await screen.findByRole('option', { name: 'blue' }));
-    expect(component.color.value).toBe('blue');
-    expect(component.color.dirty).toBe(true);
+    expect(component.form.color().value()).toBe('blue');
+    expect(component.form.color().dirty()).toBe(true);
   });
 
   it('should disable save button when pristine', async () => {
@@ -102,37 +107,55 @@ describe('IcoColorReuseEditorComponent', () => {
     });
   });
 
+  it('should keep the draft when its own save echoes back normalized', async () => {
+    const user = userEvent.setup();
+    const { component, fixture } = await setup({ color: 'x', location: 'y' });
+    await user.type(screen.getByLabelText('note'), 'abc ');
+    component.save();
+    await fixture.whenStable();
+    expect(component.reuse()?.note).toBe('abc');
+    expect(component.form.note().value()).toBe('abc ');
+    await user.type(screen.getByLabelText('note'), 'd');
+    expect(component.form.note().value()).toBe('abc d');
+  });
+
   it('should save undefined note when empty', async () => {
     const { component, reuseChange } = await setup({
       color: 'x',
       location: 'y',
       note: 'n',
     });
-    component.note.setValue('  ');
+    component.form.note().value.set('  ');
     component.save();
     expect(reuseChange).toHaveBeenCalledWith({
       color: 'x',
       location: 'y',
       note: undefined,
     });
-    expect(component.form.pristine).toBe(true);
+    expect(component.form().dirty()).toBe(false);
   });
 
   it('should keep form dirty when saving with pristine=false', async () => {
-    const { component, reuseChange } = await setup({ color: 'x', location: 'y' });
-    component.note.setValue('n');
-    component.form.markAsDirty();
+    const { component, reuseChange } = await setup({
+      color: 'x',
+      location: 'y',
+    });
+    component.form.note().value.set('n');
+    component.form().markAsDirty();
     component.save(false);
     expect(reuseChange).toHaveBeenCalled();
-    expect(component.form.dirty).toBe(true);
+    expect(component.form().dirty()).toBe(true);
   });
 
   it('should not save when invalid', async () => {
-    const { component, reuseChange } = await setup({ color: 'x', location: 'y' });
-    component.location.setValue('');
+    const { component, reuseChange } = await setup({
+      color: 'x',
+      location: 'y',
+    });
+    component.form.location().value.set('');
     component.save();
     expect(reuseChange).not.toHaveBeenCalled();
-    expect(component.location.touched).toBe(true);
+    expect(component.form.location().touched()).toBe(true);
   });
 
   it('should show required errors', async () => {
@@ -146,23 +169,52 @@ describe('IcoColorReuseEditorComponent', () => {
   });
 
   it('should show too-long errors', async () => {
-    const { component, fixture } = await setup({ color: 'x', location: 'y' });
-    component.color.setValue('a'.repeat(101));
-    component.location.setValue('a'.repeat(101));
-    component.note.setValue('a'.repeat(1001));
-    component.form.markAllAsTouched();
-    fixture.changeDetectorRef.markForCheck();
-    fixture.detectChanges();
+    const { component, refresh } = await setup({ color: 'x', location: 'y' });
+    component.form.color().value.set('a'.repeat(101));
+    component.form.location().value.set('a'.repeat(101));
+    component.form.note().value.set('a'.repeat(1001));
+    component.form().markAsTouched();
+    await refresh();
     expect(screen.getByText('color too long')).toBeTruthy();
     expect(screen.getByText('location too long')).toBeTruthy();
     expect(screen.getByText('note too long')).toBeTruthy();
   });
 
+  it('should save on Enter in a text input when changed', async () => {
+    const user = userEvent.setup();
+    const { reuseChange } = await setup({ color: 'x', location: 'y' });
+    await user.type(screen.getByLabelText('location'), 'z{Enter}');
+    expect(reuseChange).toHaveBeenCalledWith({
+      color: 'x',
+      location: 'yz',
+      note: undefined,
+    });
+  });
+
+  it('should not save on Enter when pristine or invalid', async () => {
+    const user = userEvent.setup();
+    const { reuseChange } = await setup({ color: 'x', location: 'y' });
+    await user.type(screen.getByLabelText('location'), '{Enter}');
+    await user.clear(screen.getByLabelText('color'));
+    await user.type(screen.getByLabelText('color'), '{Enter}');
+    expect(reuseChange).not.toHaveBeenCalled();
+  });
+
   it('should emit cancelEdit on cancel button', async () => {
     const user = userEvent.setup();
-    const { cancelEdit, reuseChange } = await setup({ color: 'x', location: 'y' });
-    await user.click(screen.getByRole('button', { description: 'Discard changes' }));
+    const { cancelEdit, reuseChange } = await setup({
+      color: 'x',
+      location: 'y',
+    });
+    await user.click(
+      screen.getByRole('button', { description: 'Discard changes' }),
+    );
     expect(cancelEdit).toHaveBeenCalledTimes(1);
     expect(reuseChange).not.toHaveBeenCalled();
+  });
+
+  it('should render no form element', async () => {
+    const { container } = await setup({ color: 'x', location: 'y' });
+    expect(container.querySelector('form')).toBeNull();
   });
 });
