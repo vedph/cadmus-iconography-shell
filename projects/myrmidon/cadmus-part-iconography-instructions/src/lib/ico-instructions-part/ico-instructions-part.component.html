@@ -32,7 +32,7 @@
           <tbody>
             @for (
               instruction of instructionsList();
-              track instruction;
+              track $index;
               let i = $index;
               let first = $first;
               let last = $last
@@ -77,7 +77,7 @@
                   </button>
                 </td>
                 <td>
-                  @for (type of instruction.types; track type) {
+                  @for (type of instruction.types; track $index) {
                     <span class="type"
                       >{{
                         type.value

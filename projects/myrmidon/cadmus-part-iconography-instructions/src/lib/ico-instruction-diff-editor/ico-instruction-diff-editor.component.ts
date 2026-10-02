@@ -89,7 +89,7 @@ export class IcoInstructionDiffEditorComponent {
 
   private getDiff(): IcoInstructionDiff {
     return {
-      type: this.type.value,
+      type: this.type.value?.trim() || '',
       target: this.target.value?.trim() || undefined,
       note: this.note.value?.trim() || undefined,
     };

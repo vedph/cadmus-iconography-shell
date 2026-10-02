@@ -1,4 +1,4 @@
-<form [formGroup]="form" (submit)="save()">
+<form [formGroup]="form" (submit)="save(); $event.stopPropagation()">
   <mat-tab-group>
     <!-- GENERAL -->
     <mat-tab label="General">
@@ -7,7 +7,7 @@
         <mat-form-field>
           <mat-label>EID</mat-label>
           <input matInput [formControl]="eid" />
-          @if ($any(eid).errors?.maxLength && (eid.dirty || eid.touched)) {
+          @if ($any(eid).errors?.maxlength && (eid.dirty || eid.touched)) {
             <mat-error>EID too long</mat-error>
           }
         </mat-form-field>
@@ -18,7 +18,10 @@
         <fieldset>
           <legend>types</legend>
           <!-- new type form -->
-          <form [formGroup]="typeForm" (submit)="addType()">
+          <form
+            [formGroup]="typeForm"
+            (submit)="addType(); $event.stopPropagation()"
+          >
             <fieldset>
               <div class="form-row">
                 <!-- type (bound) -->
@@ -49,7 +52,7 @@
                       <mat-error>type required</mat-error>
                     }
                     @if (
-                      $any(type).errors?.maxLength &&
+                      $any(type).errors?.maxlength &&
                       (type.dirty || type.touched)
                     ) {
                       <mat-error>type too long</mat-error>
@@ -85,7 +88,7 @@
                       <mat-error>type tag required</mat-error>
                     }
                     @if (
-                      $any(typeTag).errors?.maxLength &&
+                      $any(typeTag).errors?.maxlength &&
                       (typeTag.dirty || typeTag.touched)
                     ) {
                       <mat-error>type tag too long</mat-error>
@@ -119,7 +122,7 @@
               <tbody>
                 @for (
                   entry of typesList();
-                  track entry;
+                  track $index;
                   let i = $index;
                   let first = $first;
                   let last = $last
@@ -202,7 +205,7 @@
               <mat-error>script required</mat-error>
             }
             @if (
-              $any(script).errors?.maxLength && (script.dirty || script.touched)
+              $any(script).errors?.maxlength && (script.dirty || script.touched)
             ) {
               <mat-error>script too long</mat-error>
             }
@@ -214,7 +217,7 @@
             <mat-label>subject</mat-label>
             <input matInput [formControl]="subject" />
             @if (
-              $any(subject).errors?.maxLength &&
+              $any(subject).errors?.maxlength &&
               (subject.dirty || subject.touched)
             ) {
               <mat-error>subject too long</mat-error>
@@ -227,7 +230,7 @@
           <mat-label>repertoire</mat-label>
           <input matInput [formControl]="repertoire" />
           @if (
-            $any(repertoire).errors?.maxLength &&
+            $any(repertoire).errors?.maxlength &&
             (repertoire.dirty || repertoire.touched)
           ) {
             <mat-error>repertoire too long</mat-error>
@@ -266,7 +269,7 @@
         <mat-form-field class="long-text">
           <mat-label>text</mat-label>
           <textarea matInput [formControl]="text" rows="3"></textarea>
-          @if ($any(text).errors?.maxLength && (text.dirty || text.touched)) {
+          @if ($any(text).errors?.maxlength && (text.dirty || text.touched)) {
             <mat-error>text too long</mat-error>
           }
         </mat-form-field>
@@ -278,7 +281,7 @@
           <mat-label>sequences</mat-label>
           <textarea matInput [formControl]="sequences"></textarea>
           @if (
-            $any(sequences).errors?.maxLength &&
+            $any(sequences).errors?.maxlength &&
             (sequences.dirty || sequences.touched)
           ) {
             <mat-error>sequences too long</mat-error>
@@ -294,7 +297,7 @@
           <mat-label>location</mat-label>
           <input matInput [formControl]="location" />
           @if (
-            $any(location).errors?.maxLength &&
+            $any(location).errors?.maxlength &&
             (location.dirty || location.touched)
           ) {
             <mat-error>location too long</mat-error>
@@ -306,7 +309,7 @@
           <mat-label>target location</mat-label>
           <input matInput [formControl]="targetLocation" />
           @if (
-            $any(targetLocation).errors?.maxLength &&
+            $any(targetLocation).errors?.maxlength &&
             (targetLocation.dirty || targetLocation.touched)
           ) {
             <mat-error>target location too long</mat-error>
@@ -347,7 +350,7 @@
                   <mat-error>position required</mat-error>
                 }
                 @if (
-                  $any(position).errors?.maxLength &&
+                  $any(position).errors?.maxlength &&
                   (position.dirty || position.touched)
                 ) {
                   <mat-error>position too long</mat-error>
@@ -360,7 +363,7 @@
               <mat-label>position note</mat-label>
               <textarea matInput [formControl]="positionNote"></textarea>
               @if (
-                $any(positionNote).errors?.maxLength &&
+                $any(positionNote).errors?.maxlength &&
                 (positionNote.dirty || positionNote.touched)
               ) {
                 <mat-error>position note too long</mat-error>
@@ -403,7 +406,7 @@
         <mat-form-field class="long-text">
           <mat-label>note</mat-label>
           <textarea matInput [formControl]="note" rows="3"></textarea>
-          @if ($any(note).errors?.maxLength && (note.dirty || note.touched)) {
+          @if ($any(note).errors?.maxlength && (note.dirty || note.touched)) {
             <mat-error>note too long</mat-error>
           }
         </mat-form-field>
@@ -418,7 +421,7 @@
           <mat-label>implementation</mat-label>
           <textarea matInput [formControl]="implementation" rows="3"></textarea>
           @if (
-            $any(implementation).errors?.maxLength &&
+            $any(implementation).errors?.maxlength &&
             (implementation.dirty || implementation.touched)
           ) {
             <mat-error>implementation too long</mat-error>
@@ -450,7 +453,7 @@
             <tbody>
               @for (
                 entry of differencesList();
-                track entry;
+                track $index;
                 let i = $index;
                 let first = $first;
                 let last = $last
@@ -532,7 +535,7 @@
           <mat-label>description</mat-label>
           <textarea matInput [formControl]="description" rows="3"></textarea>
           @if (
-            $any(description).errors?.maxLength &&
+            $any(description).errors?.maxlength &&
             (description.dirty || description.touched)
           ) {
             <mat-error>description too long</mat-error>
@@ -605,7 +608,7 @@
           <tbody>
             @for (
               entry of colorReusesList();
-              track entry;
+              track $index;
               let i = $index;
               let first = $first;
               let last = $last

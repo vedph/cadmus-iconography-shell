@@ -64,6 +64,17 @@ function entryToFlag(entry: ThesaurusEntry): Flag {
   };
 }
 
+/**
+ * Get the new position of the item at index after swapping the items
+ * at indexes a and b.
+ */
+function swapIndex(index: number, a: number, b: number): number {
+  if (index === a) {
+    return b;
+  }
+  return index === b ? a : index;
+}
+
 @Component({
   selector: 'cadmus-ico-instructions-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -453,6 +464,9 @@ export class IcoInstructionEditorComponent {
         if (yes) {
           if (this.editedDiffIndex() === index) {
             this.closeDiff();
+          } else if (this.editedDiffIndex() > index) {
+            // keep tracking the edited diff, which shifted up
+            this.editedDiffIndex.update((i) => i - 1);
           }
           const differences = [...this.differences.value];
           differences.splice(index, 1);
@@ -471,6 +485,9 @@ export class IcoInstructionEditorComponent {
     const differences = [...this.differences.value];
     differences.splice(index, 1);
     differences.splice(index - 1, 0, difference);
+    this.editedDiffIndex.set(
+      swapIndex(this.editedDiffIndex(), index, index - 1),
+    );
     this.differences.setValue(differences);
     this.differences.markAsDirty();
     this.differences.updateValueAndValidity();
@@ -484,6 +501,9 @@ export class IcoInstructionEditorComponent {
     const differences = [...this.differences.value];
     differences.splice(index, 1);
     differences.splice(index + 1, 0, difference);
+    this.editedDiffIndex.set(
+      swapIndex(this.editedDiffIndex(), index, index + 1),
+    );
     this.differences.setValue(differences);
     this.differences.markAsDirty();
     this.differences.updateValueAndValidity();
@@ -531,6 +551,9 @@ export class IcoInstructionEditorComponent {
         if (yes) {
           if (this.editedReuseIndex() === index) {
             this.closeColorReuse();
+          } else if (this.editedReuseIndex() > index) {
+            // keep tracking the edited reuse, which shifted up
+            this.editedReuseIndex.update((i) => i - 1);
           }
           const entries = [...this.colorReuses.value];
           entries.splice(index, 1);
@@ -549,6 +572,9 @@ export class IcoInstructionEditorComponent {
     const entries = [...this.colorReuses.value];
     entries.splice(index, 1);
     entries.splice(index - 1, 0, entry);
+    this.editedReuseIndex.set(
+      swapIndex(this.editedReuseIndex(), index, index - 1),
+    );
     this.colorReuses.setValue(entries);
     this.colorReuses.markAsDirty();
     this.colorReuses.updateValueAndValidity();
@@ -562,6 +588,9 @@ export class IcoInstructionEditorComponent {
     const entries = [...this.colorReuses.value];
     entries.splice(index, 1);
     entries.splice(index + 1, 0, entry);
+    this.editedReuseIndex.set(
+      swapIndex(this.editedReuseIndex(), index, index + 1),
+    );
     this.colorReuses.setValue(entries);
     this.colorReuses.markAsDirty();
     this.colorReuses.updateValueAndValidity();
@@ -621,7 +650,9 @@ export class IcoInstructionEditorComponent {
   }
 
   private getInstruction(): IcoInstruction {
-    const sequences = this.sequences.value?.trim()?.split(' ') || [];
+    // sequences are space-delimited: split on any whitespace run
+    const sequences =
+      this.sequences.value?.split(/\s+/).filter((s) => s.length) || [];
 
     return {
       eid: this.eid.value || undefined,

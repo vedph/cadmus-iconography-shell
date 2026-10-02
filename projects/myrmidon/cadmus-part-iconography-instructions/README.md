@@ -42,11 +42,13 @@ Once the project is built, you can publish your library by following these steps
 
 ## Running unit tests
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+To execute unit tests with the [Vitest](https://vitest.dev) test runner, use the following command from the workspace root:
 
 ```bash
-ng test
+ng test @myrmidon/cadmus-part-iconography-instructions --watch=false
 ```
+
+Add `--coverage` to get a coverage report.
 
 ## Running end-to-end tests
 

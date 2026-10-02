@@ -51,6 +51,17 @@ interface IcoInstructionsPartSettings {
 }
 
 /**
+ * Get the new position of the item at index after swapping the items
+ * at indexes a and b.
+ */
+function swapIndex(index: number, a: number, b: number): number {
+  if (index === a) {
+    return b;
+  }
+  return index === b ? a : index;
+}
+
+/**
  * Iconographic instructions part editor component.
  * Thesauri: ico-instruction-types, ico-instruction-subjects, ico-instruction-type-tags,
  * ico-instruction-scripts, ico-instruction-diff-types, ico-instruction-positions,
@@ -311,6 +322,13 @@ export class IcoInstructionsPartComponent
       .then((settings) => {
         const options = settings?.lookupProviderOptions;
         this.lookupProviderOptions.set(options || undefined);
+      })
+      .catch((err) => {
+        console.warn(
+          `Failed to load settings for ${ICO_INSTRUCTIONS_PART_TYPEID}:`,
+          err,
+        );
+        this.lookupProviderOptions.set(undefined);
       });
     // form
     this.updateForm(data?.value);
@@ -364,6 +382,9 @@ export class IcoInstructionsPartComponent
         if (yes) {
           if (this.editedIndex() === index) {
             this.closeInstruction();
+          } else if (this.editedIndex() > index) {
+            // keep tracking the edited instruction, which shifted up
+            this.editedIndex.update((i) => i - 1);
           }
           const instructions = [...this.instructions.value];
           instructions.splice(index, 1);
@@ -382,6 +403,7 @@ export class IcoInstructionsPartComponent
     const instructions = [...this.instructions.value];
     instructions.splice(index, 1);
     instructions.splice(index - 1, 0, instruction);
+    this.editedIndex.set(swapIndex(this.editedIndex(), index, index - 1));
     this.instructions.setValue(instructions);
     this.instructions.markAsDirty();
     this.instructions.updateValueAndValidity();
@@ -395,6 +417,7 @@ export class IcoInstructionsPartComponent
     const instructions = [...this.instructions.value];
     instructions.splice(index, 1);
     instructions.splice(index + 1, 0, instruction);
+    this.editedIndex.set(swapIndex(this.editedIndex(), index, index + 1));
     this.instructions.setValue(instructions);
     this.instructions.markAsDirty();
     this.instructions.updateValueAndValidity();

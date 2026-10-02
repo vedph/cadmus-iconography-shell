@@ -1,4 +1,4 @@
-<form [formGroup]="form" (submit)="save()">
+<form [formGroup]="form" (submit)="save(); $event.stopPropagation()">
   <div class="form-row">
     <!-- color (bound) -->
     @if (colorEntries()?.length) {
@@ -20,7 +20,7 @@
       <input matInput [formControl]="color" />
       @if ($any(color).errors?.required && (color.dirty || color.touched)) {
       <mat-error>color required</mat-error>
-      } @if ($any(color).errors?.maxLength && (color.dirty || color.touched)) {
+      } @if ($any(color).errors?.maxlength && (color.dirty || color.touched)) {
       <mat-error>color too long</mat-error>
       }
     </mat-form-field>
@@ -33,7 +33,7 @@
       @if ($any(location).errors?.required && (location.dirty ||
       location.touched)) {
       <mat-error>location required</mat-error>
-      } @if ($any(location).errors?.maxLength && (location.dirty ||
+      } @if ($any(location).errors?.maxlength && (location.dirty ||
       location.touched)) {
       <mat-error>location too long</mat-error>
       }
@@ -44,7 +44,7 @@
     <mat-form-field class="long-text">
       <mat-label>note</mat-label>
       <textarea matInput [formControl]="note" rows="3"></textarea>
-      @if ($any(note).errors?.maxLength && (note.dirty || note.touched)) {
+      @if ($any(note).errors?.maxlength && (note.dirty || note.touched)) {
       <mat-error>note too long</mat-error>
       }
     </mat-form-field>
